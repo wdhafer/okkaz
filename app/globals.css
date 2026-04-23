@@ -5,19 +5,29 @@
 
 :root {
   --bg: #0A0A0F;
-  --bg2: #111118;
-  --bg3: #16161F;
+  --bg2: #0E0E16;
+  --bg3: #13131C;
+  --bg4: #18182400;
   --text: #F0F0F5;
-  --muted: #8888A0;
-  --border: rgba(255,255,255,0.08);
+  --text2: #C8C8D8;
+  --muted: #7070888;
+  --muted: #707088;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
   --violet: #7C3AED;
-  --violet-light: #9B59B6;
-  --violet-glow: rgba(124,58,237,0.2);
-  --gradient: linear-gradient(135deg, #7C3AED 0%, #C026D3 100%);
-  --font: 'Geist', -apple-system, sans-serif;
-  --radius: 12px;
-  --shadow: 0 0 0 1px rgba(255,255,255,0.06);
-  --shadow-glow: 0 0 40px rgba(124,58,237,0.15);
+  --violet2: #9B6BF5;
+  --violet-glow: rgba(124,58,237,0.22);
+  --pink: #C026D3;
+  --gradient: linear-gradient(135deg, #7C3AED 0%, #A855F7 50%, #C026D3 100%);
+  --gradient-text: linear-gradient(135deg, #A78BFA 0%, #C084FC 50%, #E879F9 100%);
+  --font: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+  --shadow-glow: 0 0 48px rgba(124,58,237,0.18), 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-glow-lg: 0 0 80px rgba(124,58,237,0.25), 0 20px 60px rgba(0,0,0,0.5);
 }
 
 body {
@@ -25,6 +35,7 @@ body {
   color: var(--text);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
   overflow-x: hidden;
 }
@@ -32,43 +43,75 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font);
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   line-height: 1.1;
+  color: var(--text);
 }
 
-a { text-decoration: none; }
+a { text-decoration: none; color: inherit; }
 
-/* Shared nav */
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+/* ─── Keyframes ─────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position: 200% center; }
+}
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(124,58,237,0.35); }
+  50%       { border-color: rgba(124,58,237,0.7); }
+}
+
+/* ─── Shared Nav ────────────────────────────────────────────── */
 .okkaz-nav {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 60px;
+  height: 58px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 48px;
-  background: rgba(10,10,15,0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(10,10,15,0.82);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-bottom: 1px solid var(--border);
   z-index: 100;
 }
 
 .okkaz-logo {
   font-weight: 800;
-  font-size: 18px;
-  letter-spacing: -0.04em;
+  font-size: 17px;
+  letter-spacing: -0.05em;
   color: var(--text);
   text-decoration: none;
 }
-.okkaz-logo span { color: var(--violet); }
+.okkaz-logo span { color: var(--violet2); }
 
 .okkaz-nav-link {
   font-size: 13px;
   font-weight: 500;
   color: var(--muted);
   text-decoration: none;
-  padding: 5px 12px;
+  padding: 5px 11px;
   border-radius: 6px;
   transition: color 0.15s, background 0.15s;
 }
@@ -80,7 +123,7 @@ a { text-decoration: none; }
   color: var(--muted);
   background: none;
   border: none;
-  padding: 5px 12px;
+  padding: 5px 11px;
   border-radius: 6px;
   cursor: pointer;
   font-family: inherit;
@@ -95,18 +138,19 @@ a { text-decoration: none; }
   background: var(--gradient);
   border: none;
   padding: 7px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   font-family: inherit;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   box-shadow: var(--shadow-glow);
-  transition: transform 0.15s, opacity 0.15s;
+  transition: transform 0.15s, opacity 0.15s, box-shadow 0.15s;
 }
-.okkaz-btn-primary:hover { transform: scale(1.02); opacity: 0.9; }
+.okkaz-btn-primary:hover { transform: scale(1.02); box-shadow: 0 0 60px rgba(124,58,237,0.3), 0 4px 20px rgba(0,0,0,0.4); }
 
-/* Footer */
+/* ─── Footer ────────────────────────────────────────────────── */
 .okkaz-footer {
   border-top: 1px solid var(--border);
   padding: 64px 0 32px;
@@ -130,7 +174,7 @@ a { text-decoration: none; }
   font-size: 13px;
   color: var(--muted);
   margin-top: 12px;
-  line-height: 1.7;
+  line-height: 1.75;
   max-width: 240px;
 }
 
@@ -139,7 +183,7 @@ a { text-decoration: none; }
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: rgba(136,136,160,0.6);
   margin-bottom: 16px;
 }
 

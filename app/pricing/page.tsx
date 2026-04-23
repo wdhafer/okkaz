@@ -152,9 +152,10 @@ export default function Pricing() {
       <style>{`
         .pricing-page { min-height: 100vh; }
 
+        /* ── HERO ──────────────────────────────────── */
         .pricing-hero {
           text-align: center;
-          padding: 140px 32px 80px;
+          padding: 144px 32px 72px;
           max-width: 640px;
           margin: 0 auto;
           position: relative;
@@ -165,9 +166,9 @@ export default function Pricing() {
           position: absolute;
           top: 0; left: 50%;
           transform: translateX(-50%);
-          width: 120%;
-          height: 400px;
-          background: radial-gradient(ellipse 70% 50% at 50% -10%, rgba(124,58,237,0.2), transparent);
+          width: 130%;
+          height: 460px;
+          background: radial-gradient(ellipse 60% 50% at 50% -5%, rgba(124,58,237,0.22), transparent);
           pointer-events: none;
           z-index: 0;
         }
@@ -177,41 +178,48 @@ export default function Pricing() {
         .pricing-eyebrow {
           display: inline-flex;
           align-items: center;
+          gap: 7px;
           font-size: 12px;
           font-weight: 600;
           color: #C084FC;
-          background: rgba(124,58,237,0.12);
-          border: 1px solid rgba(124,58,237,0.3);
-          padding: 5px 14px;
+          background: rgba(124,58,237,0.1);
+          border: 1px solid rgba(124,58,237,0.25);
+          padding: 5px 14px 5px 10px;
           border-radius: 20px;
-          margin-bottom: 24px;
-          letter-spacing: 0.02em;
+          margin-bottom: 28px;
+          letter-spacing: 0.01em;
+        }
+        .eyebrow-dot {
+          width: 6px; height: 6px;
+          border-radius: 50%;
+          background: var(--violet2);
+          box-shadow: 0 0 6px rgba(124,58,237,0.8);
         }
 
         .pricing-hero h1 {
           font-size: clamp(36px, 4vw, 56px);
           font-weight: 800;
-          letter-spacing: -0.03em;
+          letter-spacing: -0.04em;
           color: var(--text);
           margin-bottom: 16px;
         }
 
         .pricing-hero p {
-          font-size: 17px;
+          font-size: 16px;
           color: var(--muted);
-          line-height: 1.65;
+          line-height: 1.75;
           margin-bottom: 40px;
         }
 
-        /* TOGGLE */
+        /* ── TOGGLE ────────────────────────────────── */
         .billing-toggle {
           display: inline-flex;
           align-items: center;
-          gap: 4px;
+          gap: 3px;
           background: var(--bg2);
           border: 1px solid var(--border);
           border-radius: 10px;
-          padding: 4px;
+          padding: 3px;
         }
 
         .toggle-btn {
@@ -228,16 +236,17 @@ export default function Pricing() {
           display: inline-flex;
           align-items: center;
           gap: 8px;
+          letter-spacing: -0.01em;
         }
 
         .toggle-btn.active {
-          background: rgba(255,255,255,0.07);
+          background: rgba(255,255,255,0.08);
           color: var(--text);
         }
 
         .toggle-save {
-          font-size: 11px;
-          font-weight: 600;
+          font-size: 10px;
+          font-weight: 700;
           color: #6EE7B7;
           background: rgba(110,231,183,0.1);
           border: 1px solid rgba(110,231,183,0.2);
@@ -245,9 +254,9 @@ export default function Pricing() {
           border-radius: 20px;
         }
 
-        /* PLANS */
+        /* ── PLANS ─────────────────────────────────── */
         .plans-wrap {
-          max-width: 1000px;
+          max-width: 1020px;
           margin: 0 auto;
           padding: 0 48px 96px;
         }
@@ -255,25 +264,49 @@ export default function Pricing() {
         .plans-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
+          gap: 14px;
           align-items: start;
         }
 
         .plan-card {
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 16px;
-          padding: 28px 24px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 18px;
+          padding: 28px 24px 24px;
           display: flex;
           flex-direction: column;
           position: relative;
           backdrop-filter: blur(20px);
-          transition: border-color 0.2s, box-shadow 0.2s;
+          transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+          overflow: hidden;
         }
-        .plan-card:hover { box-shadow: 0 0 40px rgba(124,58,237,0.06); }
+        .plan-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        }
+        .plan-card:not(.featured):hover {
+          border-color: rgba(124,58,237,0.2);
+          box-shadow: 0 0 40px rgba(124,58,237,0.05);
+          transform: translateY(-2px);
+        }
+
         .plan-card.featured {
           border-color: rgba(124,58,237,0.4);
-          box-shadow: 0 0 60px rgba(124,58,237,0.1);
+          box-shadow: 0 0 80px rgba(124,58,237,0.15), 0 0 0 1px rgba(124,58,237,0.1);
+          transform: scale(1.02);
+        }
+        .plan-card.featured::before {
+          background: linear-gradient(90deg, transparent 5%, rgba(124,58,237,0.6) 30%, rgba(192,38,211,0.6) 70%, transparent 95%);
+        }
+        .plan-card.featured::after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,0.08), transparent);
+          pointer-events: none;
         }
 
         .popular-badge {
@@ -281,53 +314,65 @@ export default function Pricing() {
           top: -12px;
           left: 50%;
           transform: translateX(-50%);
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 700;
-          letter-spacing: 0.06em;
+          letter-spacing: 0.07em;
           color: #fff;
           background: var(--gradient);
           padding: 4px 16px;
           border-radius: 20px;
           white-space: nowrap;
-          box-shadow: 0 0 20px rgba(124,58,237,0.3);
+          box-shadow: 0 0 24px rgba(124,58,237,0.4);
+          z-index: 1;
         }
 
         .plan-name {
-          font-size: 13px;
-          font-weight: 600;
+          font-size: 12px;
+          font-weight: 700;
           color: var(--muted);
-          margin-bottom: 8px;
-          letter-spacing: 0.02em;
+          margin-bottom: 10px;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          position: relative;
+          z-index: 1;
         }
 
         .plan-price {
-          font-size: 48px;
+          font-size: 52px;
           font-weight: 800;
-          letter-spacing: -0.03em;
+          letter-spacing: -0.04em;
           color: var(--text);
           line-height: 1;
-          margin-bottom: 4px;
+          margin-bottom: 6px;
+          position: relative;
+          z-index: 1;
         }
 
         .plan-price-sub {
           font-size: 13px;
           color: var(--muted);
           margin-bottom: 24px;
+          position: relative;
+          z-index: 1;
         }
 
         .plan-divider {
           height: 1px;
           background: var(--border);
           margin-bottom: 20px;
+          position: relative;
+          z-index: 1;
         }
 
         .plan-features {
           list-style: none;
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 11px;
           margin-bottom: 28px;
           flex: 1;
+          position: relative;
+          z-index: 1;
         }
 
         .plan-features li {
@@ -339,47 +384,56 @@ export default function Pricing() {
           line-height: 1.5;
         }
 
-        .plan-features li::before {
-          content: '✓';
-          color: var(--violet);
-          font-size: 11px;
-          font-weight: 700;
+        .plan-feature-check {
+          width: 16px; height: 16px;
+          border-radius: 50%;
+          background: rgba(124,58,237,0.12);
+          border: 1px solid rgba(124,58,237,0.22);
+          display: flex;
+          align-items: center;
+          justify-content: center;
           flex-shrink: 0;
-          margin-top: 2px;
+          margin-top: 1px;
+          font-size: 9px;
+          color: var(--violet2);
+          font-weight: 700;
         }
 
         .plan-cta {
           display: block;
           width: 100%;
           text-align: center;
-          border-radius: 8px;
+          border-radius: 9px;
           padding: 12px 16px;
           font-size: 13px;
           font-weight: 600;
           text-decoration: none;
           cursor: pointer;
           font-family: inherit;
-          transition: transform 0.15s, opacity 0.15s, border-color 0.15s;
+          transition: transform 0.15s, opacity 0.15s, border-color 0.15s, box-shadow 0.15s;
+          position: relative;
+          z-index: 1;
+          letter-spacing: -0.01em;
         }
 
         .plan-cta-outline {
           background: transparent;
-          border: 1px solid rgba(255,255,255,0.12);
-          color: var(--text);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: var(--text2);
         }
-        .plan-cta-outline:hover { border-color: rgba(124,58,237,0.4); }
+        .plan-cta-outline:hover { border-color: rgba(124,58,237,0.35); color: var(--text); }
 
         .plan-cta-filled {
           background: var(--gradient);
           border: none;
           color: #fff;
-          box-shadow: 0 0 30px rgba(124,58,237,0.2);
+          box-shadow: 0 0 32px rgba(124,58,237,0.3);
         }
-        .plan-cta-filled:hover { transform: scale(1.02); opacity: 0.9; }
+        .plan-cta-filled:hover { transform: scale(1.02); box-shadow: 0 0 48px rgba(124,58,237,0.45); }
 
-        /* COMPARE TABLE */
+        /* ── COMPARE TABLE ─────────────────────────── */
         .compare-wrap {
-          max-width: 1000px;
+          max-width: 1020px;
           margin: 0 auto 96px;
           padding: 0 48px;
         }
@@ -389,8 +443,8 @@ export default function Pricing() {
           font-weight: 600;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: var(--muted);
-          margin-bottom: 24px;
+          color: rgba(112,112,136,0.5);
+          margin-bottom: 20px;
           display: flex;
           align-items: center;
           gap: 12px;
@@ -415,27 +469,25 @@ export default function Pricing() {
           color: var(--text);
           font-size: 13px;
           border-bottom: 1px solid var(--border);
+          letter-spacing: -0.01em;
         }
-
         .compare-table thead th:not(:first-child) { text-align: center; }
 
         .compare-table tbody td {
-          padding: 12px 16px;
+          padding: 11px 16px;
           color: var(--muted);
           border-bottom: 1px solid rgba(255,255,255,0.04);
         }
-
         .compare-table tbody td:not(:first-child) {
           text-align: center;
           color: var(--text);
         }
-
         .compare-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
 
-        .compare-check { color: var(--violet); font-weight: 600; }
-        .compare-dash { color: var(--muted); opacity: 0.3; }
+        .compare-check { color: var(--violet2); font-weight: 600; }
+        .compare-dash { color: var(--muted); opacity: 0.25; }
 
-        /* FAQ */
+        /* ── FAQ ───────────────────────────────────── */
         .faq-wrap {
           max-width: 720px;
           margin: 0 auto 96px;
@@ -447,7 +499,7 @@ export default function Pricing() {
           font-weight: 600;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: var(--muted);
+          color: rgba(112,112,136,0.5);
           margin-bottom: 24px;
           text-align: center;
         }
@@ -458,17 +510,17 @@ export default function Pricing() {
           border: 1px solid var(--border);
           border-radius: 12px;
           overflow: hidden;
-          background: rgba(255,255,255,0.03);
+          background: rgba(255,255,255,0.02);
           transition: border-color 0.2s;
         }
-        .faq-item.open { border-color: rgba(124,58,237,0.3); }
+        .faq-item.open { border-color: rgba(124,58,237,0.25); }
 
         .faq-question {
           width: 100%;
           text-align: left;
           background: none;
           border: none;
-          padding: 20px 24px;
+          padding: 19px 22px;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -478,29 +530,33 @@ export default function Pricing() {
           font-weight: 600;
           font-size: 14px;
           color: var(--text);
+          letter-spacing: -0.02em;
         }
 
         .faq-chevron {
-          color: var(--violet);
-          font-size: 20px;
+          color: var(--violet2);
+          font-size: 18px;
           transition: transform 0.25s;
           flex-shrink: 0;
           font-weight: 400;
           line-height: 1;
+          opacity: 0.7;
         }
         .faq-item.open .faq-chevron { transform: rotate(45deg); }
 
         .faq-answer {
           font-size: 13px;
           color: var(--muted);
-          line-height: 1.75;
-          padding: 0 24px 20px;
+          line-height: 1.8;
+          padding: 0 22px 18px;
           display: none;
         }
         .faq-item.open .faq-answer { display: block; }
 
+        /* ── RESPONSIVE ────────────────────────────── */
         @media (max-width: 900px) {
           .plans-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+          .plan-card.featured { transform: none; }
           .compare-wrap { overflow-x: auto; }
         }
         @media (max-width: 640px) {
@@ -516,7 +572,10 @@ export default function Pricing() {
         <Navbar />
 
         <div className="pricing-hero">
-          <div className="pricing-eyebrow">Tarifs · Simple et transparent</div>
+          <div className="pricing-eyebrow">
+            <span className="eyebrow-dot" />
+            Tarifs · Simple et transparent
+          </div>
           <h1>Un prix fixe.<br />Zéro commission.</h1>
           <p>
             Changez de plan quand vous voulez. Vos ventes restent 100% à vous.
@@ -550,7 +609,10 @@ export default function Pricing() {
                 <div className="plan-divider" />
                 <ul className="plan-features">
                   {plan.features.map((f) => (
-                    <li key={f}>{f}</li>
+                    <li key={f}>
+                      <span className="plan-feature-check">✓</span>
+                      {f}
+                    </li>
                   ))}
                 </ul>
                 <Link
@@ -572,14 +634,14 @@ export default function Pricing() {
               <tr>
                 <th>Fonctionnalité</th>
                 <th>Gratuit</th>
-                <th style={{ color: "var(--violet)" }}>Pro</th>
+                <th style={{ color: "var(--violet2)" }}>Pro</th>
                 <th>Business</th>
               </tr>
             </thead>
             <tbody>
               {compare.map((row) => (
                 <tr key={row.feature}>
-                  <td style={{ color: "var(--text)", fontWeight: 500 }}>{row.feature}</td>
+                  <td style={{ color: "var(--text)", fontWeight: 500, letterSpacing: "-0.01em" }}>{row.feature}</td>
                   <td className={row.gratuit === "—" ? "compare-dash" : ""}>{row.gratuit}</td>
                   <td className={row.pro === "✓" ? "compare-check" : row.pro === "—" ? "compare-dash" : ""}>{row.pro}</td>
                   <td className={row.business === "✓" ? "compare-check" : row.business === "—" ? "compare-dash" : ""}>{row.business}</td>
