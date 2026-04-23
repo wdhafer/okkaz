@@ -16,12 +16,32 @@ export default function Generate() {
   const [loading, setLoading] = useState(false);
   const [annonce, setAnnonce] = useState<Annonce | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  async function saveListing() {
+    if (!annonce) return;
+    setSaving(true);
+    const res = await fetch("/api/save-listing", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(annonce),
+    });
+    if (res.ok) {
+      setSaved(true);
+    } else {
+      const d = await res.json();
+      setError(d.error ?? "Erreur lors de la sauvegarde.");
+    }
+    setSaving(false);
+  }
 
   function handleFile(f: File) {
     setFile(f);
     setAnnonce(null);
     setError(null);
+    setSaved(false);
     const reader = new FileReader();
     reader.onload = (e) => setPreview(e.target?.result as string);
     reader.readAsDataURL(f);
@@ -61,146 +81,117 @@ export default function Generate() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-          --lilas:       #9B59B6;
-          --lilas-light: #D7BDE2;
-          --lilas-dim:   rgba(155,89,182,0.15);
-          --bg:          #0D1B2A;
-          --text:        #F0EDF6;
-          --muted:       rgba(240,237,246,0.45);
-          --border:      rgba(155,89,182,0.18);
-        }
-
-        body {
+        .gen-page {
+          min-height: 100vh;
           background: var(--bg);
-          color: var(--text);
-          font-family: 'DM Sans', sans-serif;
-          overflow-x: hidden;
+          position: relative;
+          overflow: hidden;
         }
 
-        .page { min-height: 100vh; position: relative; }
-
-        .glow {
+        .gen-page::before {
+          content: '';
           position: fixed;
-          width: 700px; height: 700px;
+          top: -20%;
+          right: -15%;
+          width: 500px;
+          height: 500px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(155,89,182,0.12) 0%, transparent 70%);
-          top: -200px; right: -150px;
-          pointer-events: none; z-index: 0;
-        }
-        .glow-2 {
-          position: fixed;
-          width: 450px; height: 450px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(215,189,226,0.06) 0%, transparent 70%);
-          bottom: 5%; left: -80px;
-          pointer-events: none; z-index: 0;
+          background: radial-gradient(circle, rgba(124,58,237,0.08) 0%, transparent 70%);
+          pointer-events: none;
         }
 
-        nav {
+        .gen-nav {
           position: fixed;
           top: 0; left: 0; right: 0;
-          padding: 22px 48px;
+          padding: 0 48px;
+          height: 60px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           z-index: 100;
           border-bottom: 1px solid var(--border);
-          background: rgba(13,27,42,0.8);
-          backdrop-filter: blur(14px);
+          background: rgba(10,10,15,0.85);
+          backdrop-filter: blur(20px);
         }
 
-        .logo {
-          font-family: 'Syne', sans-serif;
-          font-weight: 800;
-          font-size: 20px;
-          letter-spacing: -0.5px;
-          color: var(--text);
-          text-decoration: none;
-        }
-        .logo span { color: var(--lilas); }
-
-        .nav-link {
+        .gen-nav-link {
           font-size: 13px;
           font-weight: 500;
-          color: var(--lilas-light);
+          color: var(--muted);
           text-decoration: none;
-          border: 1px solid var(--border);
-          padding: 6px 16px;
-          border-radius: 20px;
-          background: var(--lilas-dim);
-          transition: opacity 0.2s;
+          padding: 6px 14px;
+          border-radius: 6px;
+          transition: background 0.15s, color 0.15s;
         }
-        .nav-link:hover { opacity: 0.75; }
+        .gen-nav-link:hover { background: rgba(255,255,255,0.05); color: var(--text); }
 
-        .main {
-          position: relative; z-index: 1;
+        .gen-main {
           max-width: 820px;
           margin: 0 auto;
-          padding: 120px 48px 80px;
+          padding: 100px 48px 80px;
+          position: relative;
+          z-index: 1;
         }
 
-        .page-tag {
+        .gen-tag {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          font-size: 12px;
-          font-weight: 500;
+          font-size: 11px;
+          font-weight: 600;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: var(--lilas-light);
-          margin-bottom: 24px;
-        }
-        .page-tag::before {
-          content: '';
-          display: block;
-          width: 24px; height: 1px;
-          background: var(--lilas);
+          color: var(--violet);
+          margin-bottom: 20px;
+          background: rgba(124,58,237,0.1);
+          border: 1px solid rgba(124,58,237,0.2);
+          padding: 4px 12px;
+          border-radius: 20px;
         }
 
-        h1 {
-          font-family: 'Syne', sans-serif;
+        .gen-main h1 {
           font-weight: 800;
           font-size: clamp(36px, 5vw, 56px);
-          line-height: 1;
-          letter-spacing: -2px;
+          line-height: 1.0;
+          letter-spacing: -0.04em;
           color: var(--text);
           margin-bottom: 12px;
         }
-        h1 em { font-style: normal; color: var(--lilas); }
 
-        .subtitle {
+        .gen-main h1 em {
+          font-style: normal;
+          background: var(--gradient);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .gen-subtitle {
           font-size: 16px;
-          font-weight: 300;
           color: var(--muted);
-          margin-bottom: 48px;
+          margin-bottom: 40px;
           line-height: 1.6;
         }
 
         .drop-zone {
-          border: 2px dashed var(--border);
+          border: 2px dashed rgba(124,58,237,0.35);
           border-radius: 16px;
-          padding: 48px 32px;
+          padding: 56px 32px;
           text-align: center;
           cursor: pointer;
           transition: border-color 0.2s, background 0.2s;
-          background: rgba(155,89,182,0.03);
+          background: rgba(124,58,237,0.03);
           position: relative;
           overflow: hidden;
         }
         .drop-zone:hover, .drop-zone.over {
-          border-color: var(--lilas);
-          background: var(--lilas-dim);
+          border-color: rgba(124,58,237,0.6);
+          background: rgba(124,58,237,0.07);
         }
 
         .drop-zone img {
           max-height: 320px;
           max-width: 100%;
-          border-radius: 10px;
+          border-radius: 12px;
           object-fit: contain;
         }
 
@@ -212,33 +203,75 @@ export default function Generate() {
 
         .drop-label {
           font-size: 15px;
-          color: var(--muted);
-          margin-bottom: 8px;
+          color: var(--text);
+          margin-bottom: 6px;
+          font-weight: 500;
         }
         .drop-sub {
           font-size: 12px;
-          color: rgba(240,237,246,0.25);
+          color: var(--muted);
         }
 
         .btn-primary {
           display: block;
           width: 100%;
-          margin-top: 20px;
-          background: var(--lilas);
+          margin-top: 16px;
+          background: var(--gradient);
           color: #fff;
           border: none;
-          border-radius: 10px;
-          padding: 16px 28px;
-          font-family: 'Syne', sans-serif;
-          font-weight: 700;
+          border-radius: 8px;
+          padding: 15px 28px;
+          font-family: inherit;
+          font-weight: 600;
           font-size: 15px;
-          letter-spacing: 0.02em;
           cursor: pointer;
-          transition: opacity 0.2s, transform 0.15s;
+          box-shadow: 0 0 30px rgba(124,58,237,0.2);
+          transition: transform 0.15s, opacity 0.15s;
         }
-        .btn-primary:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
-        .btn-primary:active:not(:disabled) { transform: translateY(0); }
+        .btn-primary:hover:not(:disabled) { transform: scale(1.01); }
+        .btn-primary:active:not(:disabled) { transform: scale(0.99); }
         .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .btn-save {
+          display: block;
+          width: 100%;
+          margin-top: 10px;
+          background: rgba(255,255,255,0.04);
+          color: var(--text);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 8px;
+          padding: 13px 28px;
+          font-family: inherit;
+          font-weight: 600;
+          font-size: 15px;
+          cursor: pointer;
+          transition: border-color 0.15s, background 0.15s;
+        }
+        .btn-save:hover:not(:disabled) {
+          background: rgba(255,255,255,0.07);
+          border-color: rgba(124,58,237,0.4);
+        }
+        .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .save-success {
+          margin-top: 10px;
+          padding: 14px 18px;
+          background: rgba(110,231,183,0.06);
+          border: 1px solid rgba(110,231,183,0.2);
+          border-radius: 8px;
+          color: #6EE7B7;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .save-success a {
+          color: #6EE7B7;
+          font-weight: 600;
+          text-decoration: underline;
+          white-space: nowrap;
+        }
 
         .spinner {
           display: inline-block;
@@ -253,14 +286,14 @@ export default function Generate() {
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .result-card {
-          margin-top: 40px;
-          border: 1px solid var(--border);
+          margin-top: 32px;
+          border: 1px solid rgba(255,255,255,0.08);
           border-radius: 16px;
-          background: rgba(155,89,182,0.05);
+          background: var(--bg2);
           overflow: hidden;
-          animation: fadeIn 0.4s ease;
+          animation: fadeIn 0.3s ease;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
         .result-header {
           padding: 20px 28px;
@@ -270,25 +303,25 @@ export default function Generate() {
           justify-content: space-between;
           gap: 12px;
           flex-wrap: wrap;
+          background: var(--bg3);
         }
 
         .result-titre {
-          font-family: 'Syne', sans-serif;
           font-weight: 700;
-          font-size: 20px;
+          font-size: 18px;
           color: var(--text);
         }
 
         .badge {
           font-size: 11px;
-          font-weight: 500;
+          font-weight: 600;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          color: var(--lilas-light);
-          border: 1px solid var(--border);
-          padding: 4px 12px;
+          color: var(--violet);
+          border: 1px solid rgba(124,58,237,0.25);
+          padding: 3px 10px;
           border-radius: 20px;
-          background: var(--lilas-dim);
+          background: rgba(124,58,237,0.08);
           white-space: nowrap;
         }
 
@@ -299,18 +332,14 @@ export default function Generate() {
           gap: 20px;
         }
 
-        .result-row {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
+        .result-row { display: flex; flex-direction: column; gap: 4px; }
 
         .result-label {
           font-size: 11px;
-          font-weight: 500;
+          font-weight: 600;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: var(--lilas);
+          color: var(--muted);
         }
 
         .result-value {
@@ -320,48 +349,44 @@ export default function Generate() {
         }
 
         .result-prix {
-          font-family: 'Syne', sans-serif;
           font-weight: 800;
-          font-size: 32px;
+          font-size: 36px;
           color: var(--text);
-          letter-spacing: -1px;
+          letter-spacing: -0.03em;
         }
         .result-prix span {
-          font-size: 18px;
-          color: var(--lilas);
-          margin-left: 4px;
+          font-size: 20px;
+          color: var(--violet);
+          margin-left: 2px;
         }
 
         .error-msg {
-          margin-top: 20px;
-          padding: 14px 18px;
-          background: rgba(240,80,80,0.08);
-          border: 1px solid rgba(240,80,80,0.2);
+          margin-top: 16px;
+          padding: 12px 16px;
+          background: rgba(239,68,68,0.08);
+          border: 1px solid rgba(239,68,68,0.2);
           border-radius: 8px;
-          color: rgba(240,140,140,0.9);
+          color: #FCA5A5;
           font-size: 14px;
         }
 
         @media (max-width: 640px) {
-          nav { padding: 18px 24px; }
-          .main { padding: 100px 24px 60px; }
+          .gen-nav { padding: 0 24px; }
+          .gen-main { padding: 84px 24px 60px; }
         }
       `}</style>
 
-      <div className="page">
-        <div className="glow" />
-        <div className="glow-2" />
-
-        <nav>
-          <Link href="/" className="logo">OKKAZ<span>.io</span></Link>
-          <Link href="/" className="nav-link">← Accueil</Link>
+      <div className="gen-page">
+        <nav className="gen-nav">
+          <Link href="/" className="okkaz-logo">OKKAZ<span>.io</span></Link>
+          <Link href="/" className="gen-nav-link">← Accueil</Link>
         </nav>
 
-        <div className="main">
-          <div className="page-tag">IA · Vision</div>
-          <h1>Générez votre<br /><em>annonce</em></h1>
-          <p className="subtitle">
-            Uploadez une photo de votre objet et laissez l'IA rédiger titre, description, prix et catégorie.
+        <div className="gen-main">
+          <div className="gen-tag">Photo · Annonce</div>
+          <h1>Une photo.<br />Votre <em>annonce</em>.</h1>
+          <p className="gen-subtitle">
+            Prenez une photo. L&apos;annonce se génère automatiquement.
           </p>
 
           <div
@@ -376,8 +401,8 @@ export default function Generate() {
             ) : (
               <>
                 <span className="drop-icon">📷</span>
-                <p className="drop-label">Glissez une photo ici ou cliquez pour choisir</p>
-                <p className="drop-sub">JPG, PNG, WEBP — max 20 Mo</p>
+                <p className="drop-label">Glissez une photo ici</p>
+                <p className="drop-sub">JPG, PNG, WEBP · max 20 Mo</p>
               </>
             )}
             <input
@@ -395,33 +420,50 @@ export default function Generate() {
             disabled={!file || loading}
           >
             {loading ? (
-              <><span className="spinner" />Analyse en cours…</>
+              <><span className="spinner" />En cours…</>
             ) : (
-              "Générer l'annonce"
+              "Créer l'annonce"
             )}
           </button>
 
           {error && <div className="error-msg">{error}</div>}
 
           {annonce && (
-            <div className="result-card">
-              <div className="result-header">
-                <span className="result-titre">{annonce.titre}</span>
-                <span className="badge">{annonce.categorie}</span>
-              </div>
-              <div className="result-body">
-                <div className="result-row">
-                  <span className="result-label">Prix suggéré</span>
-                  <span className="result-prix">
-                    {annonce.prix}<span>€</span>
-                  </span>
+            <>
+              <div className="result-card">
+                <div className="result-header">
+                  <span className="result-titre">{annonce.titre}</span>
+                  <span className="badge">{annonce.categorie}</span>
                 </div>
-                <div className="result-row">
-                  <span className="result-label">Description</span>
-                  <span className="result-value">{annonce.description}</span>
+                <div className="result-body">
+                  <div className="result-row">
+                    <span className="result-label">Prix suggéré</span>
+                    <span className="result-prix">
+                      {annonce.prix}<span>€</span>
+                    </span>
+                  </div>
+                  <div className="result-row">
+                    <span className="result-label">Description</span>
+                    <span className="result-value">{annonce.description}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              {saved ? (
+                <div className="save-success">
+                  Annonce sauvegardée.
+                  <Link href="/dashboard">Voir mes annonces →</Link>
+                </div>
+              ) : (
+                <button
+                  className="btn-save"
+                  onClick={saveListing}
+                  disabled={saving}
+                >
+                  {saving ? "Sauvegarde…" : "Sauvegarder"}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

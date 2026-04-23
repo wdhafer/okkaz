@@ -1,0 +1,28 @@
+
+> okkaz@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.14:3000
+- Environments: .env.local
+✓ Ready in 226ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+ GET / 200 in 221ms (next.js: 102ms, application-code: 119ms)
+ GET /login 200 in 69ms (next.js: 57ms, application-code: 12ms)
+ GET /login?redirect=%2Fgenerate 200 in 9ms (next.js: 1168µs, application-code: 7ms)
+ GET /signup 200 in 45ms (next.js: 31ms, application-code: 13ms)
+ POST /signup 200 in 716ms (next.js: 7ms, application-code: 710ms)
+  └─ ƒ signup({"message":"","status":"idle"}, {}) in 660ms app/auth/actions.ts
+ GET /login 200 in 27ms (next.js: 4ms, application-code: 23ms)
+ POST /login 200 in 259ms (next.js: 4ms, application-code: 255ms)
+  └─ ƒ login({"message":"","status":"idle"}, {}) in 242ms app/auth/actions.ts
+ POST /login 200 in 233ms (next.js: 6ms, application-code: 227ms)
+  └─ ƒ login({"message":"Invalid login credentials","status":"error"}, {}) in 212ms app/auth/actions.ts
+ POST /login 200 in 201ms (next.js: 6ms, application-code: 195ms)
+  └─ ƒ login({"message":"Invalid login credentials","status":"error"}, {}) in 180ms app/auth/actions.ts
+ GET / 200 in 34ms (next.js: 8ms, application-code: 26ms)
+ GET / 200 in 17ms (next.js: 5ms, application-code: 12ms)
+ GET / 200 in 22ms (next.js: 2ms, application-code: 20ms)
+ GET / 200 in 15ms (next.js: 5ms, application-code: 10ms)
