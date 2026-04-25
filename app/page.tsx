@@ -20,12 +20,11 @@ export default function Home() {
             <div>
               <div className="eyebrow">Assistant de revente IA</div>
               <h1>
-                Vendez vos objets <span>plus vite</span>, sans écrire l’annonce.
+                Vendez <span>sans effort</span>.
               </h1>
               <p className="lead">
-                OKKAZ analyse vos photos, estime un prix crédible et prépare des annonces adaptées
-                à Vinted, LeBonCoin et eBay. L’expérience est pensée comme un back-office de
-                marketplace: claire, rapide, orientée conversion.
+                OKKAZ transforme vos photos en annonces prêtes à publier, avec prix conseillé,
+                versions marketplace et assistant de négociation.
               </p>
               <div className="hero-actions">
                 <Link href="/signup" className="btn btn-primary">Créer un compte gratuit</Link>

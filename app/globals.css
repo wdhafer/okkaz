@@ -90,71 +90,28 @@ button {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
   letter-spacing: 0;
 }
 
 .brand-symbol {
-  width: 42px;
-  height: 34px;
-  border-radius: 13px 17px 17px 13px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
   background: var(--ink);
-  position: relative;
-  display: inline-block;
-  transform: rotate(-6deg);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
-}
-
-.brand-symbol::after {
-  content: "";
-  position: absolute;
-  right: -7px;
-  top: 50%;
-  width: 15px;
-  height: 15px;
-  background: var(--ink);
-  transform: translateY(-50%) rotate(45deg);
-  border-radius: 3px;
-}
-
-.brand-tag-hole {
-  position: absolute;
-  left: 9px;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #fff;
-  transform: translateY(-50%);
-  z-index: 2;
-}
-
-.brand-spark {
-  position: absolute;
-  right: 7px;
-  top: 8px;
-  width: 10px;
-  height: 10px;
-  background: var(--lilas);
-  border-radius: 2px;
-  transform: rotate(45deg);
-  z-index: 2;
+  color: var(--lilas);
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+  line-height: 1;
+  font-weight: 1000;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
 }
 
 .brand-word {
-  display: grid;
-  gap: 0;
   font-size: 22px;
-  line-height: 0.95;
+  line-height: 1;
   font-weight: 1000;
-}
-
-.brand-sub {
-  color: var(--lilas);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .nav-links {
