@@ -1,48 +1,49 @@
 import OpenAI from "openai";
 
 export async function POST(request: Request) {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const formData = await request.formData();
+  try {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const formData = await request.formData();
 
-  const images: File[] = [];
+    const images: File[] = [];
 
-  const singleImage = formData.get("image") as File | null;
-  if (singleImage && singleImage.size > 0) images.push(singleImage);
+    const singleImage = formData.get("image") as File | null;
+    if (singleImage && singleImage.size > 0) images.push(singleImage);
 
-  for (let i = 0; i < 5; i++) {
-    const img = formData.get(`image_${i}`) as File | null;
-    if (img && img.size > 0) images.push(img);
-  }
+    for (let i = 0; i < 5; i++) {
+      const img = formData.get(`image_${i}`) as File | null;
+      if (img && img.size > 0) images.push(img);
+    }
 
-  if (images.length === 0) {
-    return Response.json({ error: "Aucune image fournie." }, { status: 400 });
-  }
+    if (images.length === 0) {
+      return Response.json({ error: "Aucune image fournie." }, { status: 400 });
+    }
 
-  const imageParts = await Promise.all(
-    images.map(async (file) => {
-      const bytes = await file.arrayBuffer();
-      const base64 = Buffer.from(bytes).toString("base64");
-      return {
-        type: "image_url" as const,
-        image_url: {
-          url: `data:${file.type || "image/jpeg"};base64,${base64}`,
-          detail: "high" as const,
-        },
-      };
-    })
-  );
+    const imageParts = await Promise.all(
+      images.map(async (file) => {
+        const bytes = await file.arrayBuffer();
+        const base64 = Buffer.from(bytes).toString("base64");
+        return {
+          type: "image_url" as const,
+          image_url: {
+            url: `data:${file.type || "image/jpeg"};base64,${base64}`,
+            detail: "high" as const,
+          },
+        };
+      })
+    );
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    max_tokens: 1500,
-    messages: [
-      {
-        role: "user",
-        content: [
-          ...imageParts,
-          {
-            type: "text",
-            text: `Tu es un expert en vente d'objets d'occasion sur des marketplaces françaises (Vinted, LeBonCoin, eBay).
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      max_tokens: 1500,
+      messages: [
+        {
+          role: "user",
+          content: [
+            ...imageParts,
+            {
+              type: "text",
+              text: `Tu es un expert en vente d'objets d'occasion sur des marketplaces françaises (Vinted, LeBonCoin, eBay).
 Analyse cet objet et retourne UNIQUEMENT un JSON valide (sans markdown, sans backticks) avec exactement ces champs :
 {
   "titre": "titre accrocheur générique (max 60 caractères)",
@@ -69,28 +70,32 @@ Analyse cet objet et retourne UNIQUEMENT un JSON valide (sans markdown, sans bac
     }
   }
 }`,
-          },
-        ],
-      },
-    ],
-  });
+            },
+          ],
+        },
+      ],
+    });
 
-  const raw = response.choices[0]?.message?.content ?? "";
+    const raw = response.choices[0]?.message?.content ?? "";
 
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) {
-      return Response.json({ error: "Réponse IA invalide." }, { status: 500 });
-    }
+    let parsed;
     try {
-      parsed = JSON.parse(match[0]);
+      parsed = JSON.parse(raw);
     } catch {
-      return Response.json({ error: "Réponse IA invalide." }, { status: 500 });
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (!match) {
+        return Response.json({ error: "Réponse IA invalide." }, { status: 500 });
+      }
+      try {
+        parsed = JSON.parse(match[0]);
+      } catch {
+        return Response.json({ error: "Réponse IA invalide." }, { status: 500 });
+      }
     }
-  }
 
-  return Response.json(parsed);
+    return Response.json(parsed);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Erreur serveur";
+    return Response.json({ error: message }, { status: 500 });
+  }
 }
