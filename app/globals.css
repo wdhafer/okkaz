@@ -257,6 +257,28 @@ button {
   gap: 12px;
 }
 
+.quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.quick-links a {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.quick-links a:hover {
+  color: var(--lilas);
+  border-color: rgba(139, 92, 246, 0.35);
+  background: var(--lilas-soft);
+}
+
 .hero-card {
   border: 1px solid var(--line);
   background: var(--surface);
@@ -391,6 +413,48 @@ button {
   gap: 14px;
 }
 
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.feature-card {
+  min-height: 220px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: #fff;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.05);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(139, 92, 246, 0.35);
+  box-shadow: 0 22px 70px rgba(139, 92, 246, 0.14);
+}
+
+.feature-index {
+  color: var(--lilas);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.feature-card h3 {
+  margin: auto 0 10px;
+  font-size: 22px;
+  line-height: 1.08;
+}
+
+.feature-card p {
+  margin: 0;
+  color: var(--muted);
+}
+
 .card {
   border: 1px solid var(--line);
   background: var(--surface);
@@ -430,6 +494,31 @@ button {
   border-radius: 24px;
   box-shadow: var(--shadow);
   padding: 24px;
+}
+
+.account-panel,
+.waitlist-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  align-items: center;
+}
+
+.account-card {
+  min-width: 300px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 20px;
+  display: grid;
+  gap: 10px;
+  background: var(--lilas-soft);
+}
+
+.account-card strong,
+.account-card span:not(.field-label) {
+  display: block;
+  color: var(--ink);
+  font-weight: 850;
 }
 
 .drop-zone {
@@ -672,7 +761,13 @@ button {
   .hero-grid,
   .grid-3,
   .grid-4,
+  .feature-grid,
   .footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-panel,
+  .waitlist-panel {
     grid-template-columns: 1fr;
   }
 

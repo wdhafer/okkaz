@@ -23,8 +23,10 @@ export default function Navbar() {
         </Link>
 
         <nav className="nav-links" aria-label="Navigation principale">
+          <Link href="/#fonctionnalites" className="nav-link">Fonctionnalités</Link>
           <Link href="/#comment-ca-marche" className="nav-link">Comment ça marche</Link>
           <Link href="/#marketplaces" className="nav-link">Marketplaces</Link>
+          <Link href="/generate" className="nav-link">Générateur</Link>
           <Link href="/pricing" className="nav-link">Tarifs</Link>
         </nav>
 
