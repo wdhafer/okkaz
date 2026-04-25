@@ -36,6 +36,7 @@ export default function Generate() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("general");
   const [publishing, setPublishing] = useState<string | null>(null);
   const [publishedOn, setPublishedOn] = useState<string[]>([]);
+  const [lang, setLang] = useState<"fr" | "en">("fr");
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function saveListing() {
@@ -126,6 +127,7 @@ export default function Generate() {
     setActiveTab("general");
 
     const form = new FormData();
+    form.append("lang", lang);
     if (files.length === 1) {
       form.append("image", files[0]);
     } else {
@@ -451,6 +453,21 @@ export default function Generate() {
         .btn-publish:disabled { opacity: 0.4; cursor: not-allowed; }
         .btn-publish.done { color: #6EE7B7; border-color: rgba(110,231,183,0.2); background: rgba(110,231,183,0.05); }
 
+        /* ── LANG TOGGLE ────────────────────────── */
+        .lang-toggle {
+          display: inline-flex; gap: 0; border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.09); overflow: hidden;
+          margin-bottom: 16px;
+        }
+        .lang-btn {
+          padding: 7px 16px; font-size: 12px; font-weight: 600;
+          font-family: inherit; cursor: pointer; border: none;
+          background: transparent; color: var(--muted);
+          transition: background 0.15s, color 0.15s; letter-spacing: 0.02em;
+        }
+        .lang-btn.active { background: rgba(124,58,237,0.15); color: var(--text); }
+        .lang-btn:hover:not(.active) { background: rgba(255,255,255,0.04); color: var(--text2); }
+
         /* ── COPY BUTTON ─────────────────────────── */
         .btn-copy {
           margin-left: auto;
@@ -536,6 +553,11 @@ export default function Generate() {
             style={{ display: "none" }}
             onChange={onInputChange}
           />
+
+          <div className="lang-toggle">
+            <button className={`lang-btn${lang === "fr" ? " active" : ""}`} onClick={() => setLang("fr")}>🇫🇷 Français</button>
+            <button className={`lang-btn${lang === "en" ? " active" : ""}`} onClick={() => setLang("en")}>🇬🇧 English</button>
+          </div>
 
           <button
             className="btn-primary"

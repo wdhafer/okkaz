@@ -4,6 +4,7 @@ export async function POST(request: Request) {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
     const formData = await request.formData();
+    const lang = (formData.get("lang") as string) || "fr";
 
     const images: File[] = [];
 
@@ -40,7 +41,35 @@ export async function POST(request: Request) {
           parts: [
             ...imageParts,
             {
-              text: `Tu es un expert en vente d'objets d'occasion sur des marketplaces françaises (Vinted, LeBonCoin, eBay).
+              text: lang === "en"
+                ? `You are an expert in selling second-hand items on marketplaces (eBay, Vinted, Facebook Marketplace).
+Analyze this object and return ONLY a valid JSON (no markdown, no backticks) with exactly these fields:
+{
+  "titre": "catchy generic title (max 60 chars)",
+  "description": "complete and convincing sales description (150-250 words)",
+  "prix": "suggested price in euros (integer only, e.g. 45)",
+  "categorie": "item category (e.g. Electronics, Clothing, Home, Sports, etc.)",
+  "marque": "detected brand or null if unknown",
+  "modele": "detected model or null if unknown",
+  "etat": "new | good | used",
+  "couleur": "main color",
+  "mots_cles": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "platforms": {
+    "vinted": {
+      "titre": "Vinted title (max 50 chars, casual style, emojis ok)",
+      "description": "Vinted description (concise, emojis, 80-120 words)"
+    },
+    "leboncoin": {
+      "titre": "LeBonCoin title (max 60 chars, precise, brand + model if known)",
+      "description": "LeBonCoin description (practical, condition, 100-150 words)"
+    },
+    "ebay": {
+      "titre": "eBay title (max 80 chars, SEO, keywords first)",
+      "description": "eBay description (structured, professional, 150-200 words)"
+    }
+  }
+}`
+                : `Tu es un expert en vente d'objets d'occasion sur des marketplaces françaises (Vinted, LeBonCoin, eBay).
 Analyse cet objet et retourne UNIQUEMENT un JSON valide (sans markdown, sans backticks) avec exactement ces champs :
 {
   "titre": "titre accrocheur générique (max 60 caractères)",

@@ -37,6 +37,10 @@ export default function DashboardClient({ user, listings: initial }: Props) {
   const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({});
   const [chatInput, setChatInput] = useState<Record<string, string>>({});
   const [chatLoading, setChatLoading] = useState<string | null>(null);
+  const [openPublish, setOpenPublish] = useState<string | null>(null);
+  const [publishLoading, setPublishLoading] = useState<string | null>(null);
+  const [publishResults, setPublishResults] = useState<Record<string, Record<string, { titre: string; description: string }>>>({});
+  const [copied, setCopied] = useState<string | null>(null);
 
   async function markSold(id: string) {
     setMarking(id);
@@ -75,6 +79,29 @@ export default function DashboardClient({ user, listings: initial }: Props) {
       setPriceSuggestions((prev) => ({ ...prev, [listing.id]: data }));
     }
     setPriceLoading(null);
+  }
+
+  async function publishTo(listing: Listing, platform: string) {
+    setPublishLoading(`${listing.id}-${platform}`);
+    const res = await fetch(`/api/publish/${platform}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ listing_id: listing.id }),
+    });
+    const data = await res.json();
+    if (res.ok && data.content) {
+      setPublishResults((prev) => ({
+        ...prev,
+        [listing.id]: { ...(prev[listing.id] ?? {}), [platform]: data.content },
+      }));
+    }
+    setPublishLoading(null);
+  }
+
+  function copyText(text: string, key: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
   }
 
   async function sendMessage(listing: Listing) {
@@ -475,6 +502,69 @@ export default function DashboardClient({ user, listings: initial }: Props) {
         .chat-send:hover:not(:disabled) { background: rgba(192,38,211,0.25); }
         .chat-send:disabled { opacity: 0.35; cursor: not-allowed; }
 
+        /* ── PUBLISH PANEL ─────────────────────── */
+        .publish-panel {
+          border: 1px solid rgba(110,231,183,0.15);
+          border-top: none; border-radius: 0 0 12px 12px;
+          background: rgba(110,231,183,0.02);
+          padding: 16px 20px;
+          animation: fadeUp 0.2s ease both;
+          display: flex; flex-direction: column; gap: 14px;
+        }
+        .publish-platform-row {
+          display: flex; flex-direction: column; gap: 8px;
+        }
+        .publish-platform-header {
+          display: flex; align-items: center; justify-content: space-between;
+        }
+        .publish-platform-name {
+          font-size: 12px; font-weight: 700; color: var(--text2);
+          letter-spacing: 0.04em; text-transform: uppercase;
+        }
+        .btn-publish-platform {
+          padding: 5px 12px; border-radius: 6px; font-size: 12px;
+          font-weight: 600; font-family: inherit; cursor: pointer;
+          border: 1px solid rgba(110,231,183,0.25);
+          background: rgba(110,231,183,0.06); color: #6EE7B7;
+          transition: all 0.15s; white-space: nowrap;
+          display: flex; align-items: center; gap: 5px;
+        }
+        .btn-publish-platform:hover:not(:disabled) { background: rgba(110,231,183,0.12); }
+        .btn-publish-platform:disabled { opacity: 0.4; cursor: not-allowed; }
+        .publish-content-box {
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 8px; padding: 10px 12px;
+        }
+        .publish-content-titre {
+          font-size: 13px; font-weight: 600; color: var(--text);
+          margin-bottom: 6px; letter-spacing: -0.01em;
+        }
+        .publish-content-desc {
+          font-size: 12px; color: var(--muted); line-height: 1.6;
+          margin-bottom: 8px;
+        }
+        .publish-copy-row { display: flex; gap: 6px; }
+        .btn-copy-small {
+          padding: 4px 10px; border-radius: 5px; font-size: 11px;
+          font-weight: 600; font-family: inherit; cursor: pointer;
+          border: 1px solid rgba(255,255,255,0.08);
+          background: rgba(255,255,255,0.04); color: var(--muted);
+          transition: all 0.15s;
+        }
+        .btn-copy-small:hover { color: var(--text); border-color: rgba(124,58,237,0.3); }
+        .btn-copy-small.ok { color: #6EE7B7; border-color: rgba(110,231,183,0.3); }
+
+        .btn-pub {
+          background: transparent; border: 1px solid rgba(110,231,183,0.2);
+          color: #6EE7B7; border-radius: 7px; padding: 7px 13px;
+          font-size: 12px; font-weight: 500; font-family: inherit;
+          cursor: pointer; white-space: nowrap;
+          transition: border-color 0.2s, background 0.2s;
+          flex-shrink: 0; letter-spacing: -0.01em;
+        }
+        .btn-pub:hover { background: rgba(110,231,183,0.07); border-color: rgba(110,231,183,0.4); }
+
         .btn-chat {
           background: transparent; border: 1px solid rgba(192,38,211,0.2);
           color: #E879F9; border-radius: 7px; padding: 7px 13px;
@@ -589,7 +679,7 @@ export default function DashboardClient({ user, listings: initial }: Props) {
             <div className="listings-grid">
               {listings.map((l) => (
                 <div key={l.id} className="listing-wrap">
-                  <div className={`listing-card${openPrice === l.id || openChat === l.id ? " open" : ""}`}>
+                  <div className={`listing-card${openPrice === l.id || openChat === l.id || openPublish === l.id ? " open" : ""}`}>
                     <div className="listing-info">
                       <div className="listing-titre">{l.titre}</div>
                       <div className="listing-meta">
@@ -617,9 +707,18 @@ export default function DashboardClient({ user, listings: initial }: Props) {
                       }
                     </button>
                     <button
+                      className="btn-pub"
+                      onClick={() => {
+                        setOpenPrice(null); setOpenChat(null);
+                        setOpenPublish(openPublish === l.id ? null : l.id);
+                      }}
+                    >
+                      {openPublish === l.id ? "▲ Publier" : "🚀 Publier"}
+                    </button>
+                    <button
                       className="btn-chat"
                       onClick={() => {
-                        setOpenPrice(null);
+                        setOpenPrice(null); setOpenPublish(null);
                         setOpenChat(openChat === l.id ? null : l.id);
                       }}
                     >
@@ -635,6 +734,54 @@ export default function DashboardClient({ user, listings: initial }: Props) {
                       </button>
                     )}
                   </div>
+
+                  {openPublish === l.id && (
+                    <div className="publish-panel">
+                      {(["vinted", "leboncoin", "ebay"] as const).map((platform) => {
+                        const content = publishResults[l.id]?.[platform];
+                        const loadKey = `${l.id}-${platform}`;
+                        return (
+                          <div key={platform} className="publish-platform-row">
+                            <div className="publish-platform-header">
+                              <span className="publish-platform-name">
+                                {platform === "vinted" ? "🟢 Vinted" : platform === "leboncoin" ? "🟠 LeBonCoin" : "🔵 eBay"}
+                              </span>
+                              <button
+                                className="btn-publish-platform"
+                                onClick={() => publishTo(l, platform)}
+                                disabled={publishLoading === loadKey}
+                              >
+                                {publishLoading === loadKey
+                                  ? <><span className="spinner" style={{ borderTopColor: "#6EE7B7" }} /> Préparation…</>
+                                  : content ? "↻ Regénérer" : "Préparer le contenu"
+                                }
+                              </button>
+                            </div>
+                            {content && (
+                              <div className="publish-content-box">
+                                <div className="publish-content-titre">{content.titre}</div>
+                                <div className="publish-content-desc">{content.description}</div>
+                                <div className="publish-copy-row">
+                                  <button
+                                    className={`btn-copy-small${copied === `${loadKey}-titre` ? " ok" : ""}`}
+                                    onClick={() => copyText(content.titre, `${loadKey}-titre`)}
+                                  >
+                                    {copied === `${loadKey}-titre` ? "✓ Titre copié" : "Copier titre"}
+                                  </button>
+                                  <button
+                                    className={`btn-copy-small${copied === `${loadKey}-desc` ? " ok" : ""}`}
+                                    onClick={() => copyText(content.description, `${loadKey}-desc`)}
+                                  >
+                                    {copied === `${loadKey}-desc` ? "✓ Description copiée" : "Copier description"}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {openChat === l.id && (
                     <div className="chat-panel">
