@@ -1,11 +1,10 @@
 import OpenAI from "openai";
 import { createClient } from "@/lib/supabase/server";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 type ConversationMessage = { role: "user" | "assistant"; content: string };
 
 export async function POST(request: Request) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const supabase = await createClient();
 
   const {

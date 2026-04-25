@@ -1,8 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 const EBAY_API_URL =
   process.env.EBAY_SANDBOX === "true"
     ? "https://api.sandbox.ebay.com"
@@ -32,6 +30,7 @@ async function getEbayToken(): Promise<string | null> {
 }
 
 export async function POST(request: Request) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const supabase = await createClient();
 
   const {
@@ -235,6 +234,7 @@ async function generateEbayContent(listing: {
     };
   }
 
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const response = await openai.chat.completions.create({
     model: "gpt-4o",
     max_tokens: 500,
