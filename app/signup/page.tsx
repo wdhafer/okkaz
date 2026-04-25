@@ -3,12 +3,16 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import Navbar from "@/app/components/ui/Navbar";
-import { signup } from "@/app/auth/actions";
+import { resendConfirmation, signup } from "@/app/auth/actions";
 
 const initialState = { status: "idle" as const, message: "" };
 
 export default function SignupPage() {
   const [state, formAction, pending] = useActionState(signup, initialState);
+  const [resendState, resendAction, resendPending] = useActionState(
+    resendConfirmation,
+    initialState
+  );
 
   return (
     <div className="site-shell">
@@ -28,6 +32,21 @@ export default function SignupPage() {
               {pending ? "Création" : "Créer mon compte"}
             </button>
           </form>
+
+          <div className="field-card" style={{ marginTop: 18 }}>
+            <span className="field-label">Email non reçu</span>
+            <form action={resendAction} className="form-stack">
+              <input className="input" name="email" type="email" placeholder="Votre email" required />
+              {resendState.message ? (
+                <div className={`alert ${resendState.status === "success" ? "success" : ""}`}>
+                  {resendState.message}
+                </div>
+              ) : null}
+              <button className="btn btn-outline" disabled={resendPending} type="submit">
+                {resendPending ? "Renvoi" : "Renvoyer l’email de confirmation"}
+              </button>
+            </form>
+          </div>
 
           <p className="muted" style={{ marginTop: 18 }}>
             Déjà inscrit ? <Link href="/login" style={{ color: "var(--green)", fontWeight: 850 }}>Se connecter</Link>

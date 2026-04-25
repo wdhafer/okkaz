@@ -31,6 +31,8 @@ export async function signup(
   formData: FormData
 ): Promise<AuthState> {
   const supabase = await createClient();
+  const headersList = await headers();
+  const origin = headersList.get("origin") ?? "http://localhost:3000";
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const confirm = formData.get("confirm") as string;
@@ -42,7 +44,13 @@ export async function signup(
     };
   }
 
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback`,
+    },
+  });
 
   if (error) {
     return { status: "error", message: error.message };
@@ -52,6 +60,37 @@ export async function signup(
     status: "success",
     message:
       "Compte créé ! Vérifiez votre email pour confirmer votre inscription.",
+  };
+}
+
+export async function resendConfirmation(
+  _prevState: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const supabase = await createClient();
+  const headersList = await headers();
+  const origin = headersList.get("origin") ?? "http://localhost:3000";
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
+
+  if (!email) {
+    return { status: "error", message: "Email requis." };
+  }
+
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback`,
+    },
+  });
+
+  if (error) {
+    return { status: "error", message: error.message };
+  }
+
+  return {
+    status: "success",
+    message: "Email de confirmation renvoyé. Vérifiez aussi vos spams.",
   };
 }
 
