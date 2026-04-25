@@ -1,8 +1,8 @@
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 
 export async function POST(request: Request) {
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
     const formData = await request.formData();
 
     const images: File[] = [];
@@ -24,25 +24,22 @@ export async function POST(request: Request) {
         const bytes = await file.arrayBuffer();
         const base64 = Buffer.from(bytes).toString("base64");
         return {
-          type: "image_url" as const,
-          image_url: {
-            url: `data:${file.type || "image/jpeg"};base64,${base64}`,
-            detail: "high" as const,
+          inlineData: {
+            mimeType: file.type || "image/jpeg",
+            data: base64,
           },
         };
       })
     );
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      max_tokens: 1500,
-      messages: [
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
         {
           role: "user",
-          content: [
+          parts: [
             ...imageParts,
             {
-              type: "text",
               text: `Tu es un expert en vente d'objets d'occasion sur des marketplaces françaises (Vinted, LeBonCoin, eBay).
 Analyse cet objet et retourne UNIQUEMENT un JSON valide (sans markdown, sans backticks) avec exactement ces champs :
 {
@@ -76,7 +73,7 @@ Analyse cet objet et retourne UNIQUEMENT un JSON valide (sans markdown, sans bac
       ],
     });
 
-    const raw = response.choices[0]?.message?.content ?? "";
+    const raw = response.text ?? "";
 
     let parsed;
     try {
