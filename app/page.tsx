@@ -2,106 +2,155 @@ import Link from "next/link";
 import Navbar from "@/app/components/ui/Navbar";
 import Footer from "@/app/components/ui/Footer";
 
+const categories = ["Téléphone", "Mode", "Maison", "Sport", "Gaming", "Luxe"];
+
+const products = [
+  {
+    title: "iPhone 13",
+    category: "Téléphonie",
+    price: "349€",
+    state: "Bon état",
+  },
+  {
+    title: "Sneakers Nike",
+    category: "Mode",
+    price: "68€",
+    state: "Très bon état",
+  },
+  {
+    title: "Casque Sony",
+    category: "Audio",
+    price: "89€",
+    state: "Comme neuf",
+  },
+];
+
 export default function Home() {
   return (
     <div className="site-shell">
       <Navbar />
       <main>
-        <section className="hero clean-hero">
-          <div className="container hero-grid">
-            <div>
-              <div className="eyebrow">OKKAZ AI</div>
-              <h1>
-                Vendez <span>sans effort</span>.
-              </h1>
-              <p className="lead clean-lead">
-                Photos, prix, annonce, publication et négociation dans un seul espace vendeur.
-              </p>
-              <div className="hero-actions">
-                <Link href="/signup" className="btn btn-primary">Commencer</Link>
-                <Link href="/login" className="btn btn-outline">Connexion</Link>
+        <section className="market-hero">
+          <div className="container">
+            <div className="market-hero-grid">
+              <div>
+                <div className="eyebrow">Assistant vendeur IA</div>
+                <h1>
+                  Vendez <span>sans effort</span>.
+                </h1>
+                <p className="lead clean-lead">
+                  OKKAZ transforme vos photos en annonce prête à publier, avec prix conseillé et textes adaptés aux marketplaces.
+                </p>
+                <div className="sell-search">
+                  <span>Je veux vendre</span>
+                  <input aria-label="Objet à vendre" placeholder="un téléphone, une paire, un meuble..." />
+                  <Link href="/generate" className="btn btn-primary">Analyser</Link>
+                </div>
+                <div className="category-row" aria-label="Catégories populaires">
+                  {categories.map((category) => (
+                    <Link key={category} href="/generate">{category}</Link>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="hero-card clean-preview" aria-label="Aperçu OKKAZ">
-              <div className="hero-card-top">
-                <span>Annonce IA</span>
-                <span>89€</span>
-              </div>
-              <div className="hero-product">
-                <div className="photo-stage">
-                  <div className="photo-object" />
+              <aside className="seller-card" aria-label="Résumé vendeur OKKAZ">
+                <div className="seller-card-head">
+                  <span>OKKAZ Score</span>
+                  <strong>92%</strong>
                 </div>
-                <div className="product-meta">
-                  <div>
-                    <h3>Casque premium</h3>
-                    <p className="muted">Prêt pour Vinted, LeBonCoin, eBay</p>
-                  </div>
-                  <div className="price">89€</div>
+                <div className="seller-steps">
+                  <div><span>1</span><strong>Photos reçues</strong><em>5 images</em></div>
+                  <div><span>2</span><strong>Prix conseillé</strong><em>89€</em></div>
+                  <div><span>3</span><strong>Annonce prête</strong><em>3 plateformes</em></div>
                 </div>
-              </div>
+              </aside>
             </div>
           </div>
         </section>
 
         <section id="produit" className="section compact-section">
           <div className="container">
-            <div className="clean-strip">
+            <div className="section-head tight-head">
               <div>
-                <span className="feature-index">01</span>
-                <h3>Générer</h3>
-                <p>Une annonce complète depuis vos photos.</p>
+                <div className="eyebrow">Marketplace-ready</div>
+                <h2>Une annonce, trois canaux.</h2>
               </div>
-              <div>
-                <span className="feature-index">02</span>
-                <h3>Publier</h3>
-                <p>Des textes adaptés à chaque marketplace.</p>
-              </div>
-              <div>
-                <span className="feature-index">03</span>
-                <h3>Négocier</h3>
-                <p>Des réponses claires pour vos acheteurs.</p>
-              </div>
+              <Link href="/signup" className="btn btn-primary">Commencer</Link>
+            </div>
+            <div className="market-grid">
+              {products.map((product) => (
+                <article key={product.title} className="market-card">
+                  <div className="product-visual">
+                    <span>{product.title.slice(0, 1)}</span>
+                  </div>
+                  <div className="market-card-body">
+                    <span className="field-label">{product.category}</span>
+                    <h3>{product.title}</h3>
+                    <p>{product.state}</p>
+                    <div className="market-price-row">
+                      <strong>{product.price}</strong>
+                      <Link href="/generate">Préparer</Link>
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
           </div>
         </section>
 
         <section id="demo" className="section compact-section">
           <div className="container">
-            <div className="experience-panel clean-desk">
+            <div className="feature-band">
+              <div>
+                <span className="feature-index">01</span>
+                <h3>Génération</h3>
+                <p>Titre, description, état, catégorie, mots-clés.</p>
+              </div>
+              <div>
+                <span className="feature-index">02</span>
+                <h3>Prix IA</h3>
+                <p>Fourchette basse, haute et prix rapide.</p>
+              </div>
+              <div>
+                <span className="feature-index">03</span>
+                <h3>Publication</h3>
+                <p>Vinted, LeBonCoin, eBay en payload propre.</p>
+              </div>
+              <div>
+                <span className="feature-index">04</span>
+                <h3>Négociation</h3>
+                <p>Réponses acheteur et contre-offres assistées.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section compact-section">
+          <div className="container">
+            <div className="workspace-panel">
               <div>
                 <div className="eyebrow">Espace client</div>
-                <h2>Votre cockpit vendeur.</h2>
+                <h2>Un cockpit pour tout gérer.</h2>
                 <p className="lead clean-lead">
-                  Suivez vos annonces, préparez vos publications et marquez vos ventes.
+                  Sauvegardez vos annonces, suivez les statuts, préparez les publications et marquez les ventes.
                 </p>
                 <div className="hero-actions">
                   <Link href="/dashboard" className="btn btn-primary">Dashboard</Link>
-                  <Link href="/generate" className="btn btn-outline">Générer</Link>
+                  <Link href="/login" className="btn btn-outline">Connexion</Link>
                 </div>
               </div>
-              <div className="desk-preview" aria-label="Aperçu dashboard">
-                <div className="desk-top">
-                  <span>Dashboard</span>
-                  <span>4 actives</span>
+              <div className="workspace-preview">
+                <div className="workspace-top">
+                  <strong>Dashboard</strong>
+                  <span>8 actives</span>
                 </div>
-                <div className="desk-stats">
+                <div className="workspace-kpis">
                   <div><strong>12</strong><span>Annonces</span></div>
-                  <div><strong>8</strong><span>Actives</span></div>
                   <div><strong>426€</strong><span>Revenus</span></div>
+                  <div><strong>3</strong><span>Canaux</span></div>
                 </div>
-                <div className="desk-list">
-                  <div>
-                    <span className="desk-dot" />
-                    <strong>Casque premium</strong>
-                    <em>89€</em>
-                  </div>
-                  <div>
-                    <span className="desk-dot" />
-                    <strong>Sac lilas</strong>
-                    <em>54€</em>
-                  </div>
-                </div>
+                <div className="workspace-row"><span /> Casque Sony <strong>89€</strong></div>
+                <div className="workspace-row"><span /> Sneakers Nike <strong>68€</strong></div>
               </div>
             </div>
           </div>
@@ -112,7 +161,7 @@ export default function Home() {
             <div className="final-cta">
               <div>
                 <h2>Prêt à vendre ?</h2>
-                <p>Créez un compte, confirmez votre email et lancez votre première annonce.</p>
+                <p>Créez un compte et lancez votre première annonce IA.</p>
               </div>
               <Link href="/signup" className="btn btn-primary">Inscription</Link>
             </div>
