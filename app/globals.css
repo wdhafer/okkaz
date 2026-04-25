@@ -8,9 +8,12 @@
   --muted: #62685d;
   --soft: #dfe4d8;
   --line: #d8ded0;
-  --green: #0f7b3f;
-  --green-2: #14a44d;
-  --lime: #d7ff63;
+  --lilas: #8b5cf6;
+  --lilas-2: #a78bfa;
+  --lilas-soft: #f1ecff;
+  --green: var(--lilas);
+  --green-2: var(--lilas-2);
+  --lime: #e6d8ff;
   --orange: #ff7a1a;
   --red: #d13b2f;
   --shadow: 0 20px 60px rgba(16, 19, 15, 0.08);
@@ -169,7 +172,7 @@ button {
 .btn-lime {
   background: var(--lime);
   color: var(--ink);
-  border-color: #c4ed43;
+  border-color: #d7c4ff;
 }
 
 .btn-outline {
@@ -345,8 +348,8 @@ button {
 }
 
 .badge-green {
-  border-color: rgba(15, 123, 63, 0.2);
-  background: #eefaf2;
+  border-color: rgba(139, 92, 246, 0.24);
+  background: var(--lilas-soft);
   color: var(--green);
 }
 
@@ -437,7 +440,7 @@ button {
 
 .drop-zone.over {
   border-color: var(--green);
-  background: #f0faef;
+  background: var(--lilas-soft);
 }
 
 .photo-grid {
@@ -595,7 +598,7 @@ button {
 .input:focus,
 .textarea:focus {
   border-color: var(--green);
-  box-shadow: 0 0 0 4px rgba(15, 123, 63, 0.1);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12);
 }
 
 .auth-page {
@@ -629,9 +632,9 @@ button {
 }
 
 .alert.success {
-  background: #eefaf2;
+  background: var(--lilas-soft);
   color: var(--green);
-  border-color: rgba(15, 123, 63, 0.2);
+  border-color: rgba(139, 92, 246, 0.24);
 }
 
 .footer {
