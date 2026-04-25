@@ -1,124 +1,121 @@
 import { createClient } from "@/lib/supabase/server";
-import OpenAI from "openai";
+import { publishToVinted } from "@/lib/publishers/vinted";
+import {
+  getListingIdFromBody,
+  legacyListingToPublishRequest,
+  mergePlatformUpdate,
+  PublishValidationError,
+  validatePublishBody,
+  type PublishRequest,
+  type PublishResult,
+} from "@/lib/publishers/types";
 
-export async function POST(request: Request) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return Response.json({ error: "Non authentifié" }, { status: 401 });
-  }
-
-  const body = await request.json();
-  const { listing_id }: { listing_id: string } = body;
-
-  if (!listing_id) {
-    return Response.json({ error: "listing_id requis" }, { status: 400 });
-  }
-
-  const { data: listing, error: listingError } = await supabase
-    .from("listings")
-    .select("*")
-    .eq("id", listing_id)
-    .eq("user_id", user.id)
-    .single();
-
-  if (listingError || !listing) {
-    return Response.json({ error: "Annonce introuvable" }, { status: 404 });
-  }
-
-  const existingPlatforms = (listing.platforms as Record<string, unknown>) ?? {};
-  if (
-    existingPlatforms.vinted &&
-    (existingPlatforms.vinted as { status?: string }).status === "published"
-  ) {
-    return Response.json({ error: "Déjà publié sur Vinted" }, { status: 409 });
-  }
-
-  const optimized = await generateVintedContent(listing);
-
-  const updatedPlatforms = {
-    ...existingPlatforms,
-    vinted: {
-      status: "ready",
-      titre: optimized.titre,
-      description: optimized.description,
-      prix_suggere: listing.prix,
-      prepared_at: new Date().toISOString(),
-      note: "Vinted ne dispose pas d'API publique officielle. Copiez le contenu ci-dessous pour publier manuellement.",
-    },
-  };
-
-  const { error: updateError } = await supabase
-    .from("listings")
-    .update({ platforms: updatedPlatforms })
-    .eq("id", listing_id);
-
-  if (updateError) {
-    return Response.json({ error: updateError.message }, { status: 500 });
-  }
-
-  return Response.json({
-    status: "ready",
-    platform: "vinted",
-    content: {
-      titre: optimized.titre,
-      description: optimized.description,
-      prix: listing.prix,
-      categorie: listing.categorie,
-    },
-    instructions:
-      "Vinted ne dispose pas d'API publique. Copiez le titre et la description ci-dessus pour créer votre annonce sur vinted.fr.",
-  });
-}
-
-async function generateVintedContent(listing: {
+type ListingRow = {
+  id: string;
   titre: string;
   description: string;
   prix: string;
   categorie: string;
-  platforms?: unknown;
-}) {
-  const platforms = listing.platforms as
-    | { vinted?: { titre?: string; description?: string } }
-    | undefined;
-  if (platforms?.vinted?.titre) {
-    return {
-      titre: platforms.vinted.titre,
-      description: platforms.vinted.description ?? listing.description,
-    };
+  image_url: string | null;
+  platforms: unknown;
+};
+
+function isLegacyPayload(body: unknown): boolean {
+  return (
+    typeof body === "object" &&
+    body !== null &&
+    "listing_id" in body &&
+    !("listingId" in body)
+  );
+}
+
+async function buildPublishRequest(
+  body: unknown,
+  listing: ListingRow
+): Promise<PublishRequest> {
+  if (isLegacyPayload(body)) {
+    return legacyListingToPublishRequest(listing, body);
   }
+  return validatePublishBody(body);
+}
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    max_tokens: 400,
-    messages: [
-      {
-        role: "user",
-        content: `Reformule ce titre et cette description pour Vinted (style casual, emojis bienvenus, communauté jeune).
-
-Titre original : ${listing.titre}
-Description originale : ${listing.description}
-Catégorie : ${listing.categorie}
-
-Retourne UNIQUEMENT un JSON valide :
-{"titre": "...", "description": "..."}
-
-Contraintes : titre max 50 chars, description 80-120 mots.`,
-      },
-    ],
+async function updateListingPlatform(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  listing: ListingRow,
+  result: PublishResult
+) {
+  const platforms = mergePlatformUpdate(listing.platforms, {
+    platform: result.platform,
+    status: result.status,
+    externalId: result.externalId,
+    externalUrl: result.externalUrl,
+    updatedAt: new Date().toISOString(),
   });
 
-  const raw = response.choices[0]?.message?.content ?? "";
+  const { error } = await supabase
+    .from("listings")
+    .update({ platforms })
+    .eq("id", listing.id);
+
+  // TODO: keep this non-blocking for older databases where listings.platforms
+  // has not been migrated yet.
+  if (error && !error.message.toLowerCase().includes("platforms")) {
+    throw new Error(error.message);
+  }
+}
+
+export async function POST(request: Request) {
   try {
-    return JSON.parse(raw);
-  } catch {
-    const match = raw.match(/\{[\s\S]*\}/);
-    return match
-      ? JSON.parse(match[0])
-      : { titre: listing.titre, description: listing.description };
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return Response.json({ error: "Non authentifié" }, { status: 401 });
+    }
+
+    const body: unknown = await request.json();
+    const listingId = getListingIdFromBody(body);
+
+    if (!listingId) {
+      return Response.json({ error: "listingId est obligatoire." }, { status: 400 });
+    }
+
+    const { data: listing, error: listingError } = await supabase
+      .from("listings")
+      .select("id,titre,description,prix,categorie,image_url,platforms")
+      .eq("id", listingId)
+      .eq("user_id", user.id)
+      .single<ListingRow>();
+
+    if (listingError || !listing) {
+      return Response.json({ error: "Annonce introuvable." }, { status: 400 });
+    }
+
+    const publishRequest = await buildPublishRequest(body, listing);
+    const result = await publishToVinted(publishRequest);
+    await updateListingPlatform(supabase, listing, result);
+
+    return Response.json(result, { status: 200 });
+  } catch (error) {
+    if (error instanceof PublishValidationError) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
+
+    const message =
+      error instanceof Error ? error.message : "Erreur serveur inconnue.";
+    return Response.json(
+      {
+        success: false,
+        platform: "vinted",
+        status: "failed",
+        externalUrl: null,
+        externalId: null,
+        message,
+        preparedPayload: {},
+      },
+      { status: 500 }
+    );
   }
 }
