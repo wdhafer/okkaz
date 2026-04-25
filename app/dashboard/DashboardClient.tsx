@@ -23,6 +23,8 @@ type PriceSuggestion = {
   facteurs?: string[];
 };
 
+type ChatMessage = { role: "user" | "assistant"; content: string; status?: string };
+
 type Props = { user: User; listings: Listing[] };
 
 export default function DashboardClient({ user, listings: initial }: Props) {
@@ -31,6 +33,10 @@ export default function DashboardClient({ user, listings: initial }: Props) {
   const [priceLoading, setPriceLoading] = useState<string | null>(null);
   const [priceSuggestions, setPriceSuggestions] = useState<Record<string, PriceSuggestion>>({});
   const [openPrice, setOpenPrice] = useState<string | null>(null);
+  const [openChat, setOpenChat] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({});
+  const [chatInput, setChatInput] = useState<Record<string, string>>({});
+  const [chatLoading, setChatLoading] = useState<string | null>(null);
 
   async function markSold(id: string) {
     setMarking(id);
@@ -69,6 +75,36 @@ export default function DashboardClient({ user, listings: initial }: Props) {
       setPriceSuggestions((prev) => ({ ...prev, [listing.id]: data }));
     }
     setPriceLoading(null);
+  }
+
+  async function sendMessage(listing: Listing) {
+    const msg = chatInput[listing.id]?.trim();
+    if (!msg) return;
+
+    const history = chatMessages[listing.id] ?? [];
+    const newHistory: ChatMessage[] = [...history, { role: "user", content: msg }];
+    setChatMessages((prev) => ({ ...prev, [listing.id]: newHistory }));
+    setChatInput((prev) => ({ ...prev, [listing.id]: "" }));
+    setChatLoading(listing.id);
+
+    const context = history.map((m) => ({ role: m.role, content: m.content }));
+    const res = await fetch("/api/negotiate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ listing_id: listing.id, buyer_message: msg, context }),
+    });
+    const data = await res.json();
+
+    const reply: ChatMessage = {
+      role: "assistant",
+      content: data.reply ?? data.error ?? "Erreur",
+      status: data.offer_status,
+    };
+    setChatMessages((prev) => ({
+      ...prev,
+      [listing.id]: [...newHistory, reply],
+    }));
+    setChatLoading(null);
   }
 
   const total = listings.length;
@@ -378,6 +414,78 @@ export default function DashboardClient({ user, listings: initial }: Props) {
           color: #C084FC;
         }
 
+        /* ── CHAT ──────────────────────────────── */
+        .chat-panel {
+          border: 1px solid rgba(192,38,211,0.2);
+          border-top: none; border-radius: 0 0 12px 12px;
+          background: rgba(192,38,211,0.02);
+          overflow: hidden;
+          animation: fadeUp 0.2s ease both;
+        }
+        .chat-messages {
+          max-height: 280px; overflow-y: auto;
+          padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .chat-messages:empty::after {
+          content: 'Simulez un message d\\'acheteur pour tester l\\'agent IA…';
+          font-size: 13px; color: rgba(112,112,136,0.45);
+          display: block; text-align: center; padding: 20px 0;
+        }
+        .chat-bubble {
+          max-width: 80%; padding: 9px 13px; border-radius: 12px;
+          font-size: 13px; line-height: 1.6;
+        }
+        .chat-bubble.user {
+          align-self: flex-end;
+          background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.2);
+          color: var(--text); border-radius: 12px 12px 3px 12px;
+        }
+        .chat-bubble.assistant {
+          align-self: flex-start;
+          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+          color: var(--text2); border-radius: 12px 12px 12px 3px;
+        }
+        .chat-status {
+          font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+          text-transform: uppercase; margin-top: 4px;
+        }
+        .chat-status.too_low { color: #FCA5A5; }
+        .chat-status.negotiable { color: #FCD34D; }
+        .chat-status.accepted { color: #6EE7B7; }
+        .chat-input-row {
+          display: flex; gap: 8px; padding: 10px 14px;
+          border-top: 1px solid rgba(255,255,255,0.06);
+          background: rgba(255,255,255,0.02);
+        }
+        .chat-input {
+          flex: 1; background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.09); border-radius: 8px;
+          padding: 8px 12px; font-family: inherit; font-size: 13px;
+          color: var(--text); outline: none;
+          transition: border-color 0.2s;
+        }
+        .chat-input::placeholder { color: rgba(112,112,136,0.4); }
+        .chat-input:focus { border-color: rgba(192,38,211,0.4); }
+        .chat-send {
+          background: rgba(192,38,211,0.15); border: 1px solid rgba(192,38,211,0.25);
+          color: #E879F9; border-radius: 8px; padding: 8px 14px;
+          font-family: inherit; font-size: 13px; font-weight: 600;
+          cursor: pointer; transition: all 0.15s; white-space: nowrap;
+        }
+        .chat-send:hover:not(:disabled) { background: rgba(192,38,211,0.25); }
+        .chat-send:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        .btn-chat {
+          background: transparent; border: 1px solid rgba(192,38,211,0.2);
+          color: #E879F9; border-radius: 7px; padding: 7px 13px;
+          font-size: 12px; font-weight: 500; font-family: inherit;
+          cursor: pointer; white-space: nowrap;
+          transition: border-color 0.2s, background 0.2s;
+          flex-shrink: 0; letter-spacing: -0.01em;
+          display: flex; align-items: center; gap: 5px;
+        }
+        .btn-chat:hover { background: rgba(192,38,211,0.08); border-color: rgba(192,38,211,0.4); }
+
         /* ── SPINNER ────────────────────────────── */
         .spinner {
           display: inline-block; width: 13px; height: 13px;
@@ -481,7 +589,7 @@ export default function DashboardClient({ user, listings: initial }: Props) {
             <div className="listings-grid">
               {listings.map((l) => (
                 <div key={l.id} className="listing-wrap">
-                  <div className={`listing-card${openPrice === l.id ? " open" : ""}`}>
+                  <div className={`listing-card${openPrice === l.id || openChat === l.id ? " open" : ""}`}>
                     <div className="listing-info">
                       <div className="listing-titre">{l.titre}</div>
                       <div className="listing-meta">
@@ -498,7 +606,7 @@ export default function DashboardClient({ user, listings: initial }: Props) {
                     </div>
                     <button
                       className="btn-price"
-                      onClick={() => fetchPrice(l)}
+                      onClick={() => { setOpenChat(null); fetchPrice(l); }}
                       disabled={priceLoading === l.id}
                     >
                       {priceLoading === l.id
@@ -507,6 +615,15 @@ export default function DashboardClient({ user, listings: initial }: Props) {
                         ? "▲ Prix"
                         : "◈ Prix marché"
                       }
+                    </button>
+                    <button
+                      className="btn-chat"
+                      onClick={() => {
+                        setOpenPrice(null);
+                        setOpenChat(openChat === l.id ? null : l.id);
+                      }}
+                    >
+                      {openChat === l.id ? "▲ Agent" : "💬 Négociation"}
                     </button>
                     {l.status === "active" && (
                       <button
@@ -518,6 +635,45 @@ export default function DashboardClient({ user, listings: initial }: Props) {
                       </button>
                     )}
                   </div>
+
+                  {openChat === l.id && (
+                    <div className="chat-panel">
+                      <div className="chat-messages">
+                        {(chatMessages[l.id] ?? []).map((m, i) => (
+                          <div key={i} className={`chat-bubble ${m.role}`}>
+                            {m.content}
+                            {m.role === "assistant" && m.status && m.status !== "no_offer" && (
+                              <div className={`chat-status ${m.status}`}>
+                                {m.status === "too_low" ? "Offre trop basse" : m.status === "negotiable" ? "Négociable" : "Offre acceptée"}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {chatLoading === l.id && (
+                          <div className="chat-bubble assistant">
+                            <span className="spinner" style={{ borderTopColor: "#E879F9" }} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="chat-input-row">
+                        <input
+                          className="chat-input"
+                          placeholder="Ex: Je vous propose 30€ pour cet article ?"
+                          value={chatInput[l.id] ?? ""}
+                          onChange={(e) => setChatInput((prev) => ({ ...prev, [l.id]: e.target.value }))}
+                          onKeyDown={(e) => e.key === "Enter" && sendMessage(l)}
+                          disabled={chatLoading === l.id}
+                        />
+                        <button
+                          className="chat-send"
+                          onClick={() => sendMessage(l)}
+                          disabled={chatLoading === l.id || !chatInput[l.id]?.trim()}
+                        >
+                          Envoyer
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {openPrice === l.id && (
                     <div className="price-panel">
