@@ -1,14 +1,12 @@
 import Link from "next/link";
+import Logo from "./Logo";
 
 export default function Footer() {
   return (
     <footer className="footer">
       <div className="container footer-grid">
         <div>
-          <Link href="/" className="brand">
-            <span className="brand-mark">O</span>
-            <span>OKKAZ</span>
-          </Link>
+          <Logo />
           <p style={{ marginTop: 14, maxWidth: 320 }}>
             Une interface claire pour transformer vos photos en annonces prêtes à vendre.
           </p>

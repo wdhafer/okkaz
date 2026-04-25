@@ -149,6 +149,57 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="section">
+          <div className="container">
+            <div className="experience-panel">
+              <div>
+                <div className="eyebrow">Expérience vendeur</div>
+                <h2>Un espace client qui ressemble à un vrai centre de contrôle.</h2>
+                <p className="lead">
+                  Après connexion, l’utilisateur retrouve ses annonces, ses estimations, les contenus
+                  prêts pour chaque plateforme et l’assistant de négociation dans un seul espace.
+                </p>
+                <div className="hero-actions">
+                  <Link href="/dashboard" className="btn btn-primary">Ouvrir l’espace client</Link>
+                  <Link href="/generate" className="btn btn-outline">Créer une annonce</Link>
+                </div>
+              </div>
+              <div className="desk-preview" aria-label="Aperçu espace client">
+                <div className="desk-top">
+                  <span>OKKAZ Desk</span>
+                  <span>4 annonces actives</span>
+                </div>
+                <div className="desk-stats">
+                  <div><strong>12</strong><span>Annonces</span></div>
+                  <div><strong>8</strong><span>Actives</span></div>
+                  <div><strong>426€</strong><span>Revenus</span></div>
+                </div>
+                <div className="desk-list">
+                  <div>
+                    <span className="desk-dot" />
+                    <strong>Casque premium</strong>
+                    <em>89€</em>
+                  </div>
+                  <div>
+                    <span className="desk-dot" />
+                    <strong>Sac cuir lilas</strong>
+                    <em>54€</em>
+                  </div>
+                  <div>
+                    <span className="desk-dot" />
+                    <strong>Montre vintage</strong>
+                    <em>120€</em>
+                  </div>
+                </div>
+                <div className="desk-message">
+                  <span className="field-label">Assistant négociation</span>
+                  “Votre offre est intéressante. Je peux vous le laisser à 82€ si vous confirmez aujourd’hui.”
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="marketplaces" className="section">
           <div className="container">
             <div className="section-head">
