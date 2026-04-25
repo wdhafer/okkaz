@@ -26,9 +26,8 @@ export default function Navbar() {
         <Logo />
 
         <nav className="nav-links" aria-label="Navigation principale">
-          <Link href="/#fonctionnalites" className="nav-link">Fonctionnalités</Link>
-          <Link href="/#comment-ca-marche" className="nav-link">Comment ça marche</Link>
-          <Link href="/#marketplaces" className="nav-link">Marketplaces</Link>
+          <Link href="/#produit" className="nav-link">Produit</Link>
+          <Link href="/#demo" className="nav-link">Démo</Link>
           <Link href="/generate" className="nav-link">Générateur</Link>
           <Link href="/pricing" className="nav-link">Tarifs</Link>
         </nav>
@@ -44,7 +43,6 @@ export default function Navbar() {
                 </span>
               </div>
               <Link href="/dashboard" className="ghost-button">Dashboard</Link>
-              <Link href="/profile" className="ghost-button">Profil</Link>
               <Link href="/generate" className="btn btn-primary">Vendre</Link>
               <form action={logout}>
                 <button type="submit" className="btn btn-lime">Déconnexion</button>
@@ -57,10 +55,10 @@ export default function Navbar() {
                 className="ghost-button"
                 onClick={() => router.push("/login")}
               >
-                Connexion
+              Connexion
               </button>
               <Link href="/signup" className="btn btn-primary">
-                Créer un compte
+                Inscription
               </Link>
             </>
           )}

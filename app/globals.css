@@ -85,6 +85,7 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  min-width: 0;
 }
 
 .brand {
@@ -118,6 +119,7 @@ button {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 
 .nav-link,
@@ -129,6 +131,7 @@ button {
   border-radius: 999px;
   font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .nav-link:hover,
@@ -141,6 +144,7 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .client-pill {
@@ -197,6 +201,7 @@ button {
   padding: 0 18px;
   font-size: 14px;
   font-weight: 850;
+  white-space: nowrap;
   transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
 }
 
@@ -247,7 +252,13 @@ button {
 }
 
 .hero {
-  padding: 72px 0 44px;
+  padding: 76px 0 54px;
+}
+
+.clean-hero {
+  min-height: calc(100vh - 170px);
+  display: flex;
+  align-items: center;
 }
 
 .hero-grid {
@@ -282,10 +293,11 @@ button {
 .hero h1,
 .page-title {
   margin: 18px 0 16px;
-  font-size: clamp(42px, 7vw, 86px);
-  line-height: 0.95;
+  font-size: clamp(54px, 8vw, 112px);
+  line-height: 0.9;
   letter-spacing: 0;
   font-weight: 1000;
+  max-width: 780px;
 }
 
 .hero h1 span,
@@ -300,11 +312,22 @@ button {
   line-height: 1.65;
 }
 
+.clean-lead {
+  max-width: 500px;
+  font-size: 20px;
+  line-height: 1.45;
+}
+
 .hero-actions {
   margin-top: 28px;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.clean-preview {
+  max-width: 470px;
+  margin-left: auto;
 }
 
 .quick-links {
@@ -434,6 +457,10 @@ button {
   padding: 54px 0;
 }
 
+.compact-section {
+  padding: 32px 0;
+}
+
 .section-head {
   display: flex;
   align-items: end;
@@ -505,6 +532,42 @@ button {
   color: var(--muted);
 }
 
+.clean-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.clean-strip > div {
+  padding: 28px;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-right: 1px solid var(--line);
+}
+
+.clean-strip > div:last-child {
+  border-right: 0;
+}
+
+.clean-strip h3 {
+  margin: 34px 0 8px;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 1000;
+}
+
+.clean-strip p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 240px;
+}
+
 .experience-panel {
   border: 1px solid var(--line);
   border-radius: 34px;
@@ -524,6 +587,10 @@ button {
   font-size: clamp(34px, 5vw, 62px);
   line-height: 0.95;
   font-weight: 1000;
+}
+
+.clean-desk {
+  grid-template-columns: 1fr 0.95fr;
 }
 
 .desk-preview {
@@ -586,6 +653,14 @@ button {
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 12px;
+  min-width: 0;
+}
+
+.desk-list strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .desk-dot {
@@ -604,6 +679,35 @@ button {
   background: var(--lilas-soft);
   color: #000;
   font-weight: 800;
+}
+
+.final-cta {
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  background: #000;
+  color: #fff;
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.final-cta h2 {
+  margin: 0 0 6px;
+  font-size: clamp(34px, 5vw, 64px);
+  line-height: 0.95;
+  font-weight: 1000;
+}
+
+.final-cta p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.final-cta .btn {
+  background: #fff;
+  color: #000;
 }
 
 .card {
@@ -914,8 +1018,23 @@ button {
   .grid-4,
   .feature-grid,
   .experience-panel,
+  .clean-strip,
   .footer-grid {
     grid-template-columns: 1fr;
+  }
+
+  .clean-strip > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .clean-strip > div:last-child {
+    border-bottom: 0;
+  }
+
+  .clean-preview {
+    max-width: none;
+    margin-left: 0;
   }
 
   .account-panel,
@@ -937,6 +1056,11 @@ button {
 
   .listing-actions {
     justify-content: flex-start;
+  }
+
+  .final-cta {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
@@ -962,6 +1086,10 @@ button {
     flex: 1;
   }
 
+  .actions form .btn {
+    width: 100%;
+  }
+
   .client-pill {
     width: 100%;
     max-width: none;
@@ -973,5 +1101,10 @@ button {
 
   .photo-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .hero h1,
+  .page-title {
+    font-size: clamp(48px, 17vw, 76px);
   }
 }
