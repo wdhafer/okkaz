@@ -11,38 +11,36 @@ export default function Navbar() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setIsLoggedIn(!!data.user));
+    supabase.auth.getUser().then(({ data }) => setIsLoggedIn(Boolean(data.user)));
   }, []);
 
   return (
-    <nav className="okkaz-nav">
-      <Link href="/" className="okkaz-logo">
-        OKKAZ<span>.io</span>
-      </Link>
-
-      <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", gap: 2 }}>
-        <Link href="/#features" className="okkaz-nav-link">Fonctionnalités</Link>
-        <Link href="/pricing" className="okkaz-nav-link">Tarifs</Link>
-        <Link href="/#about" className="okkaz-nav-link">À propos</Link>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <button
-          className="okkaz-btn-ghost"
-          onClick={() => router.push(isLoggedIn ? "/dashboard" : "/login")}
-        >
-          {isLoggedIn ? "Dashboard" : "Connexion"}
-        </button>
-        <Link href="/signup" className="okkaz-btn-primary">
-          Essayer gratuitement
+    <header className="nav">
+      <div className="container nav-inner">
+        <Link href="/" className="brand" aria-label="OKKAZ accueil">
+          <span className="brand-mark">O</span>
+          <span>OKKAZ</span>
         </Link>
-      </div>
 
-      <style>{`
-        @media (max-width: 640px) {
-          .nav-center-links { display: none !important; }
-        }
-      `}</style>
-    </nav>
+        <nav className="nav-links" aria-label="Navigation principale">
+          <Link href="/#comment-ca-marche" className="nav-link">Comment ça marche</Link>
+          <Link href="/#marketplaces" className="nav-link">Marketplaces</Link>
+          <Link href="/pricing" className="nav-link">Tarifs</Link>
+        </nav>
+
+        <div className="actions">
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => router.push(isLoggedIn ? "/dashboard" : "/login")}
+          >
+            {isLoggedIn ? "Dashboard" : "Connexion"}
+          </button>
+          <Link href={isLoggedIn ? "/generate" : "/signup"} className="btn btn-primary">
+            Vendre un objet
+          </Link>
+        </div>
+      </div>
+    </header>
   );
 }

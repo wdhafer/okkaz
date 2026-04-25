@@ -30,7 +30,6 @@ async function getEbayToken(): Promise<string | null> {
 }
 
 export async function POST(request: Request) {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const supabase = await createClient();
 
   const {

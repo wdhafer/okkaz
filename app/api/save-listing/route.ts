@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { titre, description, prix, categorie, image_url } = body;
+  const { titre, description, prix, categorie, image_url, platforms } = body;
 
   if (!titre || !description || !prix || !categorie) {
     return NextResponse.json({ error: "Champs manquants" }, { status: 400 });
@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       prix,
       categorie,
       image_url: image_url ?? null,
+      platforms: platforms ?? {},
     })
     .select()
     .single();

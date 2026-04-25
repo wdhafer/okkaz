@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
+import Navbar from "@/app/components/ui/Navbar";
 
 type Listing = {
   id: string;
@@ -27,20 +28,25 @@ type ChatMessage = { role: "user" | "assistant"; content: string; status?: strin
 
 type Props = { user: User; listings: Listing[] };
 
-export default function DashboardClient({ user, listings: initial }: Props) {
-  const [listings, setListings] = useState<Listing[]>(initial);
+export default function DashboardClient({ user, listings: initialListings }: Props) {
+  const [listings, setListings] = useState<Listing[]>(initialListings);
   const [marking, setMarking] = useState<string | null>(null);
   const [priceLoading, setPriceLoading] = useState<string | null>(null);
   const [priceSuggestions, setPriceSuggestions] = useState<Record<string, PriceSuggestion>>({});
-  const [openPrice, setOpenPrice] = useState<string | null>(null);
-  const [openChat, setOpenChat] = useState<string | null>(null);
+  const [openPanel, setOpenPanel] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({});
   const [chatInput, setChatInput] = useState<Record<string, string>>({});
   const [chatLoading, setChatLoading] = useState<string | null>(null);
-  const [openPublish, setOpenPublish] = useState<string | null>(null);
   const [publishLoading, setPublishLoading] = useState<string | null>(null);
   const [publishResults, setPublishResults] = useState<Record<string, Record<string, { titre: string; description: string }>>>({});
   const [copied, setCopied] = useState<string | null>(null);
+
+  const total = listings.length;
+  const active = listings.filter((listing) => listing.status === "active").length;
+  const sold = listings.filter((listing) => listing.status === "sold").length;
+  const revenue = listings
+    .filter((listing) => listing.status === "sold")
+    .reduce((sum, listing) => sum + (parseFloat(listing.prix.replace(",", ".")) || 0), 0);
 
   async function markSold(id: string) {
     setMarking(id);
@@ -49,40 +55,27 @@ export default function DashboardClient({ user, listings: initial }: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-    if (res.ok) {
-      setListings((prev) =>
-        prev.map((l) => (l.id === id ? { ...l, status: "sold" } : l))
-      );
-    }
+    if (res.ok) setListings((prev) => prev.map((listing) => listing.id === id ? { ...listing, status: "sold" } : listing));
     setMarking(null);
   }
 
   async function fetchPrice(listing: Listing) {
-    if (priceSuggestions[listing.id]) {
-      setOpenPrice(openPrice === listing.id ? null : listing.id);
-      return;
-    }
+    setOpenPanel(`${listing.id}:price`);
+    if (priceSuggestions[listing.id]) return;
     setPriceLoading(listing.id);
-    setOpenPrice(listing.id);
     const res = await fetch("/api/price-suggest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        listing_id: listing.id,
-        titre: listing.titre,
-        categorie: listing.categorie,
-        etat: "bon",
-      }),
+      body: JSON.stringify({ listing_id: listing.id, titre: listing.titre, categorie: listing.categorie, etat: "bon" }),
     });
     const data = await res.json();
-    if (res.ok) {
-      setPriceSuggestions((prev) => ({ ...prev, [listing.id]: data }));
-    }
+    if (res.ok) setPriceSuggestions((prev) => ({ ...prev, [listing.id]: data }));
     setPriceLoading(null);
   }
 
   async function publishTo(listing: Listing, platform: string) {
-    setPublishLoading(`${listing.id}-${platform}`);
+    setOpenPanel(`${listing.id}:publish`);
+    setPublishLoading(`${listing.id}:${platform}`);
     const res = await fetch(`/api/publish/${platform}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -98,23 +91,18 @@ export default function DashboardClient({ user, listings: initial }: Props) {
     setPublishLoading(null);
   }
 
-  function copyText(text: string, key: string) {
-    navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 2000);
-  }
-
   async function sendMessage(listing: Listing) {
     const msg = chatInput[listing.id]?.trim();
     if (!msg) return;
 
     const history = chatMessages[listing.id] ?? [];
-    const newHistory: ChatMessage[] = [...history, { role: "user", content: msg }];
-    setChatMessages((prev) => ({ ...prev, [listing.id]: newHistory }));
+    const nextHistory: ChatMessage[] = [...history, { role: "user", content: msg }];
+    setChatMessages((prev) => ({ ...prev, [listing.id]: nextHistory }));
     setChatInput((prev) => ({ ...prev, [listing.id]: "" }));
     setChatLoading(listing.id);
+    setOpenPanel(`${listing.id}:chat`);
 
-    const context = history.map((m) => ({ role: m.role, content: m.content }));
+    const context = history.map((message) => ({ role: message.role, content: message.content }));
     const res = await fetch("/api/negotiate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -122,753 +110,164 @@ export default function DashboardClient({ user, listings: initial }: Props) {
     });
     const data = await res.json();
 
-    const reply: ChatMessage = {
-      role: "assistant",
-      content: data.reply ?? data.error ?? "Erreur",
-      status: data.offer_status,
-    };
     setChatMessages((prev) => ({
       ...prev,
-      [listing.id]: [...newHistory, reply],
+      [listing.id]: [
+        ...nextHistory,
+        { role: "assistant", content: data.reply ?? data.error ?? "Erreur", status: data.offer_status },
+      ],
     }));
     setChatLoading(null);
   }
 
-  const total = listings.length;
-  const actives = listings.filter((l) => l.status === "active").length;
-  const vendues = listings.filter((l) => l.status === "sold").length;
-  const revenus = listings
-    .filter((l) => l.status === "sold")
-    .reduce((acc, l) => acc + (parseFloat(l.prix.replace(",", ".")) || 0), 0);
-
-  function formatDate(iso: string) {
-    return new Date(iso).toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+  function copyText(text: string, key: string) {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 1600);
   }
 
-  const firstName = user.email?.split("@")[0] ?? "vous";
+  function formatDate(iso: string) {
+    return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  }
 
   return (
-    <>
-      <style>{`
-        .dash-page {
-          min-height: 100vh;
-          background: var(--bg);
-          position: relative;
-        }
-
-        .dash-glow {
-          position: fixed;
-          width: 800px; height: 800px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 65%);
-          top: -300px; right: -200px;
-          pointer-events: none; z-index: 0;
-          animation: pulse-glow 10s ease-in-out infinite;
-        }
-
-        .dash-grid-bg {
-          position: fixed;
-          inset: 0;
-          background-image: radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
-          background-size: 32px 32px;
-          pointer-events: none;
-          z-index: 0;
-          mask-image: radial-gradient(ellipse 100% 60% at 50% 0%, black 40%, transparent 100%);
-          -webkit-mask-image: radial-gradient(ellipse 100% 60% at 50% 0%, black 40%, transparent 100%);
-        }
-
-        .dash-nav {
-          position: fixed;
-          top: 0; left: 0; right: 0;
-          padding: 0 48px;
-          height: 58px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          z-index: 100;
-          border-bottom: 1px solid var(--border);
-          background: rgba(10,10,15,0.82);
-          backdrop-filter: blur(24px);
-        }
-
-        .dash-nav-center { display: flex; align-items: center; gap: 4px; }
-
-        .dash-nav-item {
-          font-size: 13px; font-weight: 500;
-          color: var(--muted); text-decoration: none;
-          padding: 5px 11px; border-radius: 6px;
-          transition: background 0.15s, color 0.15s;
-          letter-spacing: -0.01em;
-        }
-        .dash-nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text); }
-        .dash-nav-item.active { color: var(--text); background: rgba(255,255,255,0.06); }
-
-        .dash-nav-right { display: flex; align-items: center; gap: 8px; }
-
-        .dash-user-pill {
-          display: flex; align-items: center; gap: 8px;
-          font-size: 13px; font-weight: 500; color: var(--muted);
-          padding: 5px 12px 5px 8px; border-radius: 20px;
-          border: 1px solid var(--border); background: rgba(255,255,255,0.03);
-          text-decoration: none; transition: border-color 0.15s, color 0.15s;
-          letter-spacing: -0.01em;
-        }
-        .dash-user-pill:hover { border-color: rgba(124,58,237,0.3); color: var(--text); }
-
-        .dash-user-avatar {
-          width: 22px; height: 22px; border-radius: 50%;
-          background: var(--gradient);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 10px; font-weight: 800; color: #fff; flex-shrink: 0;
-        }
-
-        .dash-main {
-          position: relative; z-index: 1;
-          max-width: 1020px; margin: 0 auto;
-          padding: 96px 48px 80px;
-        }
-
-        .dash-header {
-          display: flex; align-items: flex-end;
-          justify-content: space-between;
-          margin-bottom: 40px; gap: 16px; flex-wrap: wrap;
-        }
-
-        .dash-tag {
-          font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
-          text-transform: uppercase; color: var(--violet2);
-          margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
-        }
-        .dash-tag-dot {
-          width: 5px; height: 5px; border-radius: 50%;
-          background: var(--violet2); box-shadow: 0 0 6px rgba(124,58,237,0.7);
-        }
-
-        .dash-main h1 {
-          font-weight: 800; font-size: clamp(26px, 3.5vw, 40px);
-          line-height: 1.0; letter-spacing: -0.04em; color: var(--text);
-        }
-        .dash-main h1 em {
-          font-style: normal;
-          background: var(--gradient-text);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .btn-new {
-          background: var(--gradient); color: #fff; border: none;
-          border-radius: 10px; padding: 11px 20px;
-          font-family: inherit; font-weight: 600; font-size: 13px;
-          cursor: pointer; text-decoration: none;
-          display: inline-flex; align-items: center; gap: 6px;
-          box-shadow: 0 0 32px rgba(124,58,237,0.22);
-          transition: transform 0.15s, box-shadow 0.15s;
-          white-space: nowrap; letter-spacing: -0.01em;
-        }
-        .btn-new:hover { transform: scale(1.02); box-shadow: 0 0 48px rgba(124,58,237,0.35); }
-
-        .stats-grid {
-          display: grid; grid-template-columns: repeat(4, 1fr);
-          gap: 12px; margin-bottom: 36px;
-        }
-
-        .stat-card {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 14px; padding: 20px 22px;
-          backdrop-filter: blur(20px);
-          transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
-          position: relative; overflow: hidden;
-        }
-        .stat-card::before {
-          content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(124,58,237,0.25), transparent);
-          opacity: 0; transition: opacity 0.2s;
-        }
-        .stat-card:hover { border-color: rgba(124,58,237,0.2); box-shadow: 0 0 32px rgba(124,58,237,0.05); transform: translateY(-1px); }
-        .stat-card:hover::before { opacity: 1; }
-
-        .stat-label {
-          font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
-          text-transform: uppercase; color: rgba(112,112,136,0.6); margin-bottom: 12px;
-        }
-        .stat-value { font-weight: 800; font-size: 30px; letter-spacing: -0.04em; color: var(--text); line-height: 1; }
-        .stat-sub { font-size: 12px; color: rgba(112,112,136,0.5); margin-top: 4px; }
-
-        .section-row {
-          display: flex; align-items: center; justify-content: space-between;
-          margin-bottom: 16px; gap: 12px;
-        }
-        .section-row-title {
-          font-size: 13px; font-weight: 700; color: var(--text);
-          letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px;
-        }
-        .section-count {
-          font-size: 11px; font-weight: 600; color: var(--muted);
-          background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-          padding: 1px 8px; border-radius: 20px;
-        }
-
-        .listings-grid { display: grid; gap: 8px; }
-
-        .listing-wrap { display: flex; flex-direction: column; }
-
-        .listing-card {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 12px; padding: 16px 20px;
-          display: flex; align-items: center; gap: 16px;
-          backdrop-filter: blur(20px);
-          transition: border-color 0.2s, background 0.2s;
-        }
-        .listing-card.open {
-          border-radius: 12px 12px 0 0;
-          border-bottom-color: transparent;
-        }
-        .listing-card:hover { border-color: rgba(124,58,237,0.2); background: rgba(255,255,255,0.04); }
-
-        .listing-info { flex: 1; min-width: 0; }
-
-        .listing-titre {
-          font-weight: 600; font-size: 14px; color: var(--text);
-          margin-bottom: 5px; white-space: nowrap; overflow: hidden;
-          text-overflow: ellipsis; letter-spacing: -0.02em;
-        }
-
-        .listing-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-
-        .meta-text { font-size: 12px; color: rgba(112,112,136,0.6); }
-        .meta-sep { width: 3px; height: 3px; border-radius: 50%; background: rgba(112,112,136,0.3); flex-shrink: 0; }
-
-        .badge {
-          font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
-          text-transform: uppercase; padding: 2px 8px;
-          border-radius: 20px; border: 1px solid transparent;
-        }
-        .badge-active { color: #6EE7B7; background: rgba(110,231,183,0.07); border-color: rgba(110,231,183,0.18); }
-        .badge-sold { color: rgba(112,112,136,0.6); background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.06); }
-        .badge-cat { color: #C084FC; background: rgba(124,58,237,0.07); border-color: rgba(124,58,237,0.18); }
-
-        .listing-prix {
-          font-weight: 800; font-size: 20px; color: var(--text);
-          letter-spacing: -0.04em; white-space: nowrap; flex-shrink: 0;
-        }
-        .listing-prix span { font-size: 13px; color: var(--violet2); margin-left: 1px; }
-
-        .btn-sold {
-          background: transparent; border: 1px solid rgba(255,255,255,0.08);
-          color: rgba(112,112,136,0.7); border-radius: 7px; padding: 7px 13px;
-          font-size: 12px; font-weight: 500; font-family: inherit;
-          cursor: pointer; white-space: nowrap;
-          transition: border-color 0.2s, color 0.2s, background 0.2s;
-          flex-shrink: 0; letter-spacing: -0.01em;
-        }
-        .btn-sold:hover:not(:disabled) { border-color: rgba(110,231,183,0.35); color: #6EE7B7; background: rgba(110,231,183,0.05); }
-        .btn-sold:disabled { opacity: 0.35; cursor: not-allowed; }
-
-        .btn-price {
-          background: transparent; border: 1px solid rgba(124,58,237,0.2);
-          color: var(--violet2); border-radius: 7px; padding: 7px 13px;
-          font-size: 12px; font-weight: 500; font-family: inherit;
-          cursor: pointer; white-space: nowrap;
-          transition: border-color 0.2s, color 0.2s, background 0.2s;
-          flex-shrink: 0; letter-spacing: -0.01em;
-          display: flex; align-items: center; gap: 5px;
-        }
-        .btn-price:hover:not(:disabled) { background: rgba(124,58,237,0.08); border-color: rgba(124,58,237,0.4); }
-        .btn-price:disabled { opacity: 0.35; cursor: not-allowed; }
-
-        /* ── PRICE PANEL ───────────────────────── */
-        .price-panel {
-          border: 1px solid rgba(124,58,237,0.2);
-          border-top: none; border-radius: 0 0 12px 12px;
-          background: rgba(124,58,237,0.03);
-          padding: 16px 20px;
-          animation: fadeUp 0.2s ease both;
-        }
-
-        .price-panel-loading {
-          display: flex; align-items: center; gap: 10px;
-          color: var(--muted); font-size: 13px;
-        }
-
-        .price-bars {
-          display: grid; grid-template-columns: repeat(3, 1fr);
-          gap: 10px; margin-bottom: 14px;
-        }
-
-        .price-bar {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 10px; padding: 12px 14px;
-          text-align: center;
-        }
-        .price-bar.recommande {
-          border-color: rgba(124,58,237,0.3);
-          background: rgba(124,58,237,0.06);
-        }
-
-        .price-bar-label {
-          font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-          text-transform: uppercase; color: rgba(112,112,136,0.6);
-          margin-bottom: 6px;
-        }
-        .price-bar.recommande .price-bar-label { color: var(--violet2); }
-
-        .price-bar-value {
-          font-size: 22px; font-weight: 800; letter-spacing: -0.04em;
-          color: var(--text); line-height: 1;
-        }
-        .price-bar-value span { font-size: 13px; color: var(--muted); margin-left: 1px; }
-        .price-bar.recommande .price-bar-value { color: #C084FC; }
-
-        .price-analyse {
-          font-size: 13px; color: var(--muted); line-height: 1.65;
-          margin-bottom: 10px;
-        }
-
-        .price-facteurs {
-          display: flex; flex-wrap: wrap; gap: 6px;
-        }
-        .price-facteur {
-          font-size: 11px; padding: 3px 9px; border-radius: 20px;
-          background: rgba(124,58,237,0.07); border: 1px solid rgba(124,58,237,0.15);
-          color: #C084FC;
-        }
-
-        /* ── CHAT ──────────────────────────────── */
-        .chat-panel {
-          border: 1px solid rgba(192,38,211,0.2);
-          border-top: none; border-radius: 0 0 12px 12px;
-          background: rgba(192,38,211,0.02);
-          overflow: hidden;
-          animation: fadeUp 0.2s ease both;
-        }
-        .chat-messages {
-          max-height: 280px; overflow-y: auto;
-          padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
-        }
-        .chat-messages:empty::after {
-          content: 'Simulez un message d\\'acheteur pour tester l\\'agent IA…';
-          font-size: 13px; color: rgba(112,112,136,0.45);
-          display: block; text-align: center; padding: 20px 0;
-        }
-        .chat-bubble {
-          max-width: 80%; padding: 9px 13px; border-radius: 12px;
-          font-size: 13px; line-height: 1.6;
-        }
-        .chat-bubble.user {
-          align-self: flex-end;
-          background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.2);
-          color: var(--text); border-radius: 12px 12px 3px 12px;
-        }
-        .chat-bubble.assistant {
-          align-self: flex-start;
-          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-          color: var(--text2); border-radius: 12px 12px 12px 3px;
-        }
-        .chat-status {
-          font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
-          text-transform: uppercase; margin-top: 4px;
-        }
-        .chat-status.too_low { color: #FCA5A5; }
-        .chat-status.negotiable { color: #FCD34D; }
-        .chat-status.accepted { color: #6EE7B7; }
-        .chat-input-row {
-          display: flex; gap: 8px; padding: 10px 14px;
-          border-top: 1px solid rgba(255,255,255,0.06);
-          background: rgba(255,255,255,0.02);
-        }
-        .chat-input {
-          flex: 1; background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.09); border-radius: 8px;
-          padding: 8px 12px; font-family: inherit; font-size: 13px;
-          color: var(--text); outline: none;
-          transition: border-color 0.2s;
-        }
-        .chat-input::placeholder { color: rgba(112,112,136,0.4); }
-        .chat-input:focus { border-color: rgba(192,38,211,0.4); }
-        .chat-send {
-          background: rgba(192,38,211,0.15); border: 1px solid rgba(192,38,211,0.25);
-          color: #E879F9; border-radius: 8px; padding: 8px 14px;
-          font-family: inherit; font-size: 13px; font-weight: 600;
-          cursor: pointer; transition: all 0.15s; white-space: nowrap;
-        }
-        .chat-send:hover:not(:disabled) { background: rgba(192,38,211,0.25); }
-        .chat-send:disabled { opacity: 0.35; cursor: not-allowed; }
-
-        /* ── PUBLISH PANEL ─────────────────────── */
-        .publish-panel {
-          border: 1px solid rgba(110,231,183,0.15);
-          border-top: none; border-radius: 0 0 12px 12px;
-          background: rgba(110,231,183,0.02);
-          padding: 16px 20px;
-          animation: fadeUp 0.2s ease both;
-          display: flex; flex-direction: column; gap: 14px;
-        }
-        .publish-platform-row {
-          display: flex; flex-direction: column; gap: 8px;
-        }
-        .publish-platform-header {
-          display: flex; align-items: center; justify-content: space-between;
-        }
-        .publish-platform-name {
-          font-size: 12px; font-weight: 700; color: var(--text2);
-          letter-spacing: 0.04em; text-transform: uppercase;
-        }
-        .btn-publish-platform {
-          padding: 5px 12px; border-radius: 6px; font-size: 12px;
-          font-weight: 600; font-family: inherit; cursor: pointer;
-          border: 1px solid rgba(110,231,183,0.25);
-          background: rgba(110,231,183,0.06); color: #6EE7B7;
-          transition: all 0.15s; white-space: nowrap;
-          display: flex; align-items: center; gap: 5px;
-        }
-        .btn-publish-platform:hover:not(:disabled) { background: rgba(110,231,183,0.12); }
-        .btn-publish-platform:disabled { opacity: 0.4; cursor: not-allowed; }
-        .publish-content-box {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 8px; padding: 10px 12px;
-        }
-        .publish-content-titre {
-          font-size: 13px; font-weight: 600; color: var(--text);
-          margin-bottom: 6px; letter-spacing: -0.01em;
-        }
-        .publish-content-desc {
-          font-size: 12px; color: var(--muted); line-height: 1.6;
-          margin-bottom: 8px;
-        }
-        .publish-copy-row { display: flex; gap: 6px; }
-        .btn-copy-small {
-          padding: 4px 10px; border-radius: 5px; font-size: 11px;
-          font-weight: 600; font-family: inherit; cursor: pointer;
-          border: 1px solid rgba(255,255,255,0.08);
-          background: rgba(255,255,255,0.04); color: var(--muted);
-          transition: all 0.15s;
-        }
-        .btn-copy-small:hover { color: var(--text); border-color: rgba(124,58,237,0.3); }
-        .btn-copy-small.ok { color: #6EE7B7; border-color: rgba(110,231,183,0.3); }
-
-        .btn-pub {
-          background: transparent; border: 1px solid rgba(110,231,183,0.2);
-          color: #6EE7B7; border-radius: 7px; padding: 7px 13px;
-          font-size: 12px; font-weight: 500; font-family: inherit;
-          cursor: pointer; white-space: nowrap;
-          transition: border-color 0.2s, background 0.2s;
-          flex-shrink: 0; letter-spacing: -0.01em;
-        }
-        .btn-pub:hover { background: rgba(110,231,183,0.07); border-color: rgba(110,231,183,0.4); }
-
-        .btn-chat {
-          background: transparent; border: 1px solid rgba(192,38,211,0.2);
-          color: #E879F9; border-radius: 7px; padding: 7px 13px;
-          font-size: 12px; font-weight: 500; font-family: inherit;
-          cursor: pointer; white-space: nowrap;
-          transition: border-color 0.2s, background 0.2s;
-          flex-shrink: 0; letter-spacing: -0.01em;
-          display: flex; align-items: center; gap: 5px;
-        }
-        .btn-chat:hover { background: rgba(192,38,211,0.08); border-color: rgba(192,38,211,0.4); }
-
-        /* ── SPINNER ────────────────────────────── */
-        .spinner {
-          display: inline-block; width: 13px; height: 13px;
-          border: 2px solid rgba(124,58,237,0.3); border-top-color: var(--violet2);
-          border-radius: 50%; animation: spin 0.7s linear infinite;
-          flex-shrink: 0;
-        }
-
-        /* ── EMPTY STATE ───────────────────────── */
-        .empty-state {
-          text-align: center; padding: 80px 24px; color: var(--muted);
-          border: 1px dashed rgba(255,255,255,0.07); border-radius: 18px;
-          background: rgba(255,255,255,0.02);
-        }
-        .empty-icon { font-size: 40px; margin-bottom: 16px; }
-        .empty-text { font-size: 15px; margin-bottom: 24px; color: var(--muted); letter-spacing: -0.01em; }
-
-        @media (max-width: 900px) { .dash-nav-center { display: none; } }
-        @media (max-width: 700px) {
-          .dash-nav { padding: 0 24px; }
-          .dash-main { padding: 86px 24px 60px; }
-          .stats-grid { grid-template-columns: repeat(2, 1fr); }
-          .listing-card { flex-wrap: wrap; }
-          .price-bars { grid-template-columns: repeat(3, 1fr); }
-        }
-      `}</style>
-
-      <div className="dash-page">
-        <div className="dash-glow" />
-        <div className="dash-grid-bg" />
-
-        <nav className="dash-nav">
-          <Link href="/" className="okkaz-logo">OKKAZ<span>.io</span></Link>
-          <div className="dash-nav-center">
-            <Link href="/dashboard" className="dash-nav-item active">Dashboard</Link>
-            <Link href="/generate" className="dash-nav-item">Générer</Link>
+    <div className="site-shell">
+      <Navbar />
+      <main className="container tool-shell">
+        <div className="dashboard-head">
+          <div>
+            <div className="eyebrow">Dashboard</div>
+            <h1 className="page-title" style={{ marginBottom: 0 }}>Vos annonces <span>OKKAZ</span>.</h1>
+            <p className="muted">Connecté avec {user.email}</p>
           </div>
-          <div className="dash-nav-right">
-            <Link href="/profile" className="dash-user-pill">
-              <div className="dash-user-avatar">
-                {firstName.charAt(0).toUpperCase()}
-              </div>
-              {firstName}
-            </Link>
-          </div>
-        </nav>
+          <Link href="/generate" className="btn btn-primary">Nouvelle annonce</Link>
+        </div>
 
-        <div className="dash-main">
-          <div className="dash-header">
-            <div>
-              <div className="dash-tag">
-                <span className="dash-tag-dot" />
-                Espace vendeur
-              </div>
-              <h1>Mes <em>annonces</em></h1>
-            </div>
-            <Link href="/generate" className="btn-new">
-              + Nouvelle annonce
-            </Link>
-          </div>
+        <div className="grid-4" style={{ marginBottom: 22 }}>
+          <div className="card"><span className="field-label">Total</span><div className="stat">{total}</div></div>
+          <div className="card"><span className="field-label">Actives</span><div className="stat">{active}</div></div>
+          <div className="card"><span className="field-label">Vendues</span><div className="stat">{sold}</div></div>
+          <div className="card"><span className="field-label">Revenus</span><div className="stat">{revenue.toFixed(0)}€</div></div>
+        </div>
 
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-label">Total</div>
-              <div className="stat-value">{total}</div>
-              <div className="stat-sub">annonces créées</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Actives</div>
-              <div className="stat-value">{actives}</div>
-              <div className="stat-sub">en cours de vente</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Vendues</div>
-              <div className="stat-value">{vendues}</div>
-              <div className="stat-sub">transactions réussies</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-label">Revenus</div>
-              <div className="stat-value">{revenus.toFixed(0)} €</div>
-              <div className="stat-sub">estimés</div>
-            </div>
-          </div>
+        {listings.length === 0 ? (
+          <section className="panel" style={{ textAlign: "center" }}>
+            <h2>Aucune annonce pour le moment.</h2>
+            <p className="muted">Générez votre première annonce à partir de quelques photos.</p>
+            <Link href="/generate" className="btn btn-green" style={{ marginTop: 18 }}>Commencer</Link>
+          </section>
+        ) : (
+          <section className="listing-list">
+            {listings.map((listing) => {
+              const price = priceSuggestions[listing.id];
+              const publish = publishResults[listing.id] ?? {};
+              const panel = openPanel?.startsWith(`${listing.id}:`) ? openPanel.split(":")[1] : null;
 
-          <div className="section-row">
-            <div className="section-row-title">
-              Annonces
-              <span className="section-count">{listings.length}</span>
-            </div>
-          </div>
-
-          {listings.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">📦</div>
-              <p className="empty-text">Aucune annonce pour l&apos;instant.</p>
-              <Link href="/generate" className="btn-new">
-                Créer ma première annonce →
-              </Link>
-            </div>
-          ) : (
-            <div className="listings-grid">
-              {listings.map((l) => (
-                <div key={l.id} className="listing-wrap">
-                  <div className={`listing-card${openPrice === l.id || openChat === l.id || openPublish === l.id ? " open" : ""}`}>
-                    <div className="listing-info">
-                      <div className="listing-titre">{l.titre}</div>
-                      <div className="listing-meta">
-                        <span className={`badge ${l.status === "active" ? "badge-active" : "badge-sold"}`}>
-                          {l.status === "active" ? "Active" : "Vendue"}
-                        </span>
-                        <span className="badge badge-cat">{l.categorie}</span>
-                        <span className="meta-sep" />
-                        <span className="meta-text">{formatDate(l.created_at)}</span>
-                      </div>
+              return (
+                <article key={listing.id} className="listing-card">
+                  <div>
+                    <h2 className="listing-title">{listing.titre}</h2>
+                    <div className="badge-row">
+                      <span className={`badge ${listing.status === "active" ? "badge-green" : ""}`}>{listing.status === "active" ? "Active" : "Vendue"}</span>
+                      <span className="badge">{listing.categorie}</span>
+                      <span className="badge">{formatDate(listing.created_at)}</span>
                     </div>
-                    <div className="listing-prix">
-                      {l.prix}<span>€</span>
-                    </div>
-                    <button
-                      className="btn-price"
-                      onClick={() => { setOpenChat(null); fetchPrice(l); }}
-                      disabled={priceLoading === l.id}
-                    >
-                      {priceLoading === l.id
-                        ? <><span className="spinner" /> Analyse…</>
-                        : openPrice === l.id
-                        ? "▲ Prix"
-                        : "◈ Prix marché"
-                      }
-                    </button>
-                    <button
-                      className="btn-pub"
-                      onClick={() => {
-                        setOpenPrice(null); setOpenChat(null);
-                        setOpenPublish(openPublish === l.id ? null : l.id);
-                      }}
-                    >
-                      {openPublish === l.id ? "▲ Publier" : "🚀 Publier"}
-                    </button>
-                    <button
-                      className="btn-chat"
-                      onClick={() => {
-                        setOpenPrice(null); setOpenPublish(null);
-                        setOpenChat(openChat === l.id ? null : l.id);
-                      }}
-                    >
-                      {openChat === l.id ? "▲ Agent" : "💬 Négociation"}
-                    </button>
-                    {l.status === "active" && (
-                      <button
-                        className="btn-sold"
-                        onClick={() => markSold(l.id)}
-                        disabled={marking === l.id}
-                      >
-                        {marking === l.id ? "…" : "Marquer vendu"}
+                    <p className="muted" style={{ marginTop: 10 }}>{listing.description}</p>
+                  </div>
+                  <div>
+                    <div className="price" style={{ textAlign: "right", marginBottom: 14 }}>{listing.prix}€</div>
+                    <div className="listing-actions">
+                      <button className="btn btn-outline" onClick={() => fetchPrice(listing)} disabled={priceLoading === listing.id}>
+                        {priceLoading === listing.id ? "Analyse" : "Prix IA"}
                       </button>
-                    )}
+                      <button className="btn btn-outline" onClick={() => setOpenPanel(`${listing.id}:publish`)}>Publier</button>
+                      <button className="btn btn-outline" onClick={() => setOpenPanel(`${listing.id}:chat`)}>Négocier</button>
+                      {listing.status === "active" ? (
+                        <button className="btn btn-lime" onClick={() => markSold(listing.id)} disabled={marking === listing.id}>
+                          {marking === listing.id ? "Maj" : "Vendu"}
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
 
-                  {openPublish === l.id && (
-                    <div className="publish-panel">
-                      {(["vinted", "leboncoin", "ebay"] as const).map((platform) => {
-                        const content = publishResults[l.id]?.[platform];
-                        const loadKey = `${l.id}-${platform}`;
-                        return (
-                          <div key={platform} className="publish-platform-row">
-                            <div className="publish-platform-header">
-                              <span className="publish-platform-name">
-                                {platform === "vinted" ? "🟢 Vinted" : platform === "leboncoin" ? "🟠 LeBonCoin" : "🔵 eBay"}
-                              </span>
-                              <button
-                                className="btn-publish-platform"
-                                onClick={() => publishTo(l, platform)}
-                                disabled={publishLoading === loadKey}
-                              >
-                                {publishLoading === loadKey
-                                  ? <><span className="spinner" style={{ borderTopColor: "#6EE7B7" }} /> Préparation…</>
-                                  : content ? "↻ Regénérer" : "Préparer le contenu"
-                                }
+                  {panel === "price" ? (
+                    <div className="subpanel">
+                      {price ? (
+                        <>
+                          <div className="grid-3">
+                            <div className="field-card"><span className="field-label">Bas</span><span className="price">{price.prix_min}€</span></div>
+                            <div className="field-card"><span className="field-label">Recommandé</span><span className="price">{price.prix_recommande}€</span></div>
+                            <div className="field-card"><span className="field-label">Haut</span><span className="price">{price.prix_max}€</span></div>
+                          </div>
+                          <p className="muted" style={{ marginTop: 12 }}>{price.analyse}</p>
+                        </>
+                      ) : <p className="muted">Calcul en cours...</p>}
+                    </div>
+                  ) : null}
+
+                  {panel === "publish" ? (
+                    <div className="subpanel">
+                      <div className="badge-row">
+                        {(["vinted", "leboncoin", "ebay"] as const).map((platform) => (
+                          <button
+                            key={platform}
+                            className="btn btn-outline"
+                            onClick={() => publishTo(listing, platform)}
+                            disabled={publishLoading === `${listing.id}:${platform}`}
+                          >
+                            {publishLoading === `${listing.id}:${platform}` ? "Préparation" : `Préparer ${platform}`}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="result-grid" style={{ marginTop: 14 }}>
+                        {Object.entries(publish).map(([platform, content]) => (
+                          <div key={platform} className="field-card">
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                              <span className="field-label">{platform}</span>
+                              <button className="ghost-button" onClick={() => copyText(`${content.titre}\n\n${content.description}`, `${listing.id}:${platform}`)}>
+                                {copied === `${listing.id}:${platform}` ? "Copié" : "Copier"}
                               </button>
                             </div>
-                            {content && (
-                              <div className="publish-content-box">
-                                <div className="publish-content-titre">{content.titre}</div>
-                                <div className="publish-content-desc">{content.description}</div>
-                                <div className="publish-copy-row">
-                                  <button
-                                    className={`btn-copy-small${copied === `${loadKey}-titre` ? " ok" : ""}`}
-                                    onClick={() => copyText(content.titre, `${loadKey}-titre`)}
-                                  >
-                                    {copied === `${loadKey}-titre` ? "✓ Titre copié" : "Copier titre"}
-                                  </button>
-                                  <button
-                                    className={`btn-copy-small${copied === `${loadKey}-desc` ? " ok" : ""}`}
-                                    onClick={() => copyText(content.description, `${loadKey}-desc`)}
-                                  >
-                                    {copied === `${loadKey}-desc` ? "✓ Description copiée" : "Copier description"}
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {openChat === l.id && (
-                    <div className="chat-panel">
-                      <div className="chat-messages">
-                        {(chatMessages[l.id] ?? []).map((m, i) => (
-                          <div key={i} className={`chat-bubble ${m.role}`}>
-                            {m.content}
-                            {m.role === "assistant" && m.status && m.status !== "no_offer" && (
-                              <div className={`chat-status ${m.status}`}>
-                                {m.status === "too_low" ? "Offre trop basse" : m.status === "negotiable" ? "Négociable" : "Offre acceptée"}
-                              </div>
-                            )}
+                            <strong>{content.titre}</strong>
+                            <p className="muted">{content.description}</p>
                           </div>
                         ))}
-                        {chatLoading === l.id && (
-                          <div className="chat-bubble assistant">
-                            <span className="spinner" style={{ borderTopColor: "#E879F9" }} />
-                          </div>
-                        )}
                       </div>
-                      <div className="chat-input-row">
+                    </div>
+                  ) : null}
+
+                  {panel === "chat" ? (
+                    <div className="subpanel">
+                      <div className="result-grid" style={{ marginBottom: 12 }}>
+                        {(chatMessages[listing.id] ?? []).map((message, index) => (
+                          <div key={`${message.role}-${index}`} className="field-card">
+                            <span className="field-label">{message.role === "user" ? "Acheteur" : "Assistant vendeur"} {message.status ? `· ${message.status}` : ""}</span>
+                            <span className="field-value">{message.content}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="chat-row">
                         <input
-                          className="chat-input"
-                          placeholder="Ex: Je vous propose 30€ pour cet article ?"
-                          value={chatInput[l.id] ?? ""}
-                          onChange={(e) => setChatInput((prev) => ({ ...prev, [l.id]: e.target.value }))}
-                          onKeyDown={(e) => e.key === "Enter" && sendMessage(l)}
-                          disabled={chatLoading === l.id}
+                          className="input"
+                          value={chatInput[listing.id] ?? ""}
+                          placeholder="Ex: Bonjour, je vous propose 50€"
+                          onChange={(event) => setChatInput((prev) => ({ ...prev, [listing.id]: event.target.value }))}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") sendMessage(listing);
+                          }}
                         />
-                        <button
-                          className="chat-send"
-                          onClick={() => sendMessage(l)}
-                          disabled={chatLoading === l.id || !chatInput[l.id]?.trim()}
-                        >
-                          Envoyer
+                        <button className="btn btn-green" onClick={() => sendMessage(listing)} disabled={chatLoading === listing.id}>
+                          {chatLoading === listing.id ? "Réponse" : "Envoyer"}
                         </button>
                       </div>
                     </div>
-                  )}
-
-                  {openPrice === l.id && (
-                    <div className="price-panel">
-                      {priceLoading === l.id ? (
-                        <div className="price-panel-loading">
-                          <span className="spinner" />
-                          Analyse du marché en cours…
-                        </div>
-                      ) : priceSuggestions[l.id] ? (
-                        <>
-                          <div className="price-bars">
-                            <div className="price-bar">
-                              <div className="price-bar-label">Min</div>
-                              <div className="price-bar-value">
-                                {priceSuggestions[l.id].prix_min}<span>€</span>
-                              </div>
-                            </div>
-                            <div className="price-bar recommande">
-                              <div className="price-bar-label">Recommandé</div>
-                              <div className="price-bar-value">
-                                {priceSuggestions[l.id].prix_recommande}<span>€</span>
-                              </div>
-                            </div>
-                            <div className="price-bar">
-                              <div className="price-bar-label">Max</div>
-                              <div className="price-bar-value">
-                                {priceSuggestions[l.id].prix_max}<span>€</span>
-                              </div>
-                            </div>
-                          </div>
-                          <p className="price-analyse">{priceSuggestions[l.id].analyse}</p>
-                          {priceSuggestions[l.id].facteurs && (
-                            <div className="price-facteurs">
-                              {priceSuggestions[l.id].facteurs!.map((f) => (
-                                <span key={f} className="price-facteur">{f}</span>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+                  ) : null}
+                </article>
+              );
+            })}
+          </section>
+        )}
+      </main>
+    </div>
   );
 }
