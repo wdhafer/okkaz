@@ -31,7 +31,7 @@ const base: CSSProperties = {
 
 const variants: Record<Variant, CSSProperties> = {
   primary: { background: "var(--lilas)", color: "#fff", border: "1.5px solid var(--lilas)" },
-  outline: { background: "var(--bg)", color: "var(--text)", border: "1.5px solid var(--border)" },
+  outline: { background: "#fff", color: "var(--ink)", border: "1.5px solid var(--line)" },
   ghost: { background: "transparent", color: "var(--muted)", border: "1.5px solid transparent" },
 };
 

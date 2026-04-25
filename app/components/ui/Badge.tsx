@@ -9,10 +9,10 @@ interface BadgeProps {
 }
 
 const colorMap: Record<Color, CSSProperties> = {
-  lilas: { color: "var(--lilas)", background: "var(--lilas-light)", border: "1px solid rgba(155,89,182,0.2)" },
-  green: { color: "#15803d", background: "#f0fdf4", border: "1px solid #bbf7d0" },
-  gray:  { color: "var(--muted)", background: "var(--bg2)", border: "1px solid var(--border)" },
-  yellow: { color: "#92400e", background: "#fef3c7", border: "1px solid #fde68a" },
+  lilas: { color: "var(--lilas)", background: "var(--lilas-soft)", border: "1px solid rgba(139,92,246,0.24)" },
+  green: { color: "var(--lilas)", background: "var(--lilas-soft)", border: "1px solid rgba(139,92,246,0.24)" },
+  gray:  { color: "var(--muted)", background: "#fff", border: "1px solid var(--line)" },
+  yellow: { color: "var(--lilas)", background: "var(--lilas-soft)", border: "1px solid rgba(139,92,246,0.24)" },
 };
 
 export default function Badge({ children, color = "lilas", style }: BadgeProps) {
