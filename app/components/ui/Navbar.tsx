@@ -37,7 +37,7 @@ export default function Navbar() {
             {isLoggedIn ? "Dashboard" : "Connexion"}
           </button>
           <Link href={isLoggedIn ? "/generate" : "/signup"} className="btn btn-primary">
-            Vendre un objet
+            {isLoggedIn ? "Vendre un objet" : "Inscription"}
           </Link>
         </div>
       </div>
